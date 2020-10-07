@@ -1,0 +1,24 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paul
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paul
+  template:
+    metadata:
+      labels:
+        app: paul
+    spec:
+      containers:
+        - name: paul
+          image: spazzy757/paul:edge
+          imagePullPolicy: Always
+          env:
+          - name: SERVER_HOST
+            value: 0.0.0.0
+          - name: GITHUB_TOKEN
+            value: ""

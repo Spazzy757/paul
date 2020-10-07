@@ -28,7 +28,7 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
-func GetAccessToken(config config.Config, installationID int) (string, error) {
+func GetAccessToken(config config.Config, installationID int64) (string, error) {
 	token := os.Getenv("personal_access_token")
 	if len(token) == 0 {
 
@@ -48,7 +48,7 @@ func GetAccessToken(config config.Config, installationID int) (string, error) {
 }
 
 // MakeAccessTokenForInstallation makes an access token for an installation / private key
-func makeAccessTokenForInstallation(appID string, installation int, privateKey string) (string, error) {
+func makeAccessTokenForInstallation(appID string, installation int64, privateKey string) (string, error) {
 	signed, err := getSignedJwtToken(appID, privateKey)
 
 	if err != nil {

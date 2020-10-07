@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/google/go-github/v32/github"
 	"golang.org/x/oauth2"
@@ -23,7 +24,6 @@ type pullRequestClient struct {
 }
 
 func IncomingWebhook(data []byte, r *http.Request) {
-	gclient := getClient()
 	ctx := context.Background()
 	event, err := github.ParseWebHook(github.WebHookType(r), data)
 	if err != nil {
@@ -36,6 +36,7 @@ func IncomingWebhook(data []byte, r *http.Request) {
 	case *github.PushEvent:
 		// this is a commit push, do something with it
 	case *github.PullRequestEvent:
+		gclient := getClient(*e.Installation.ID)
 		pr := &pullRequestClient{ctx: ctx, client: gclient.PullRequests}
 		// this is a pull request, do something with it
 		if e.Action != nil && *e.Action == "opened" {
@@ -54,9 +55,16 @@ func IncomingWebhook(data []byte, r *http.Request) {
 	}
 }
 
-func getClient() *github.Client {
+func getClient(installationId int64) *github.Client {
+	cfg, err := config.NewConfig()
+	if err != nil {
+		log.Fatalf("Can't load config: %v", err)
+	}
+	token, tokenErr := helpers.GetAccessToken(cfg, installationId)
+	if tokenErr != nil {
+		log.Fatalf("Can't load config: %v", err)
+	}
 	ctx := context.Background()
-	token := helpers.GetEnv("GITHUB_TOKEN", "")
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)

@@ -2,76 +2,76 @@ package github
 
 import (
 	"context"
-	"github.com/Spazzy757/paul/pkg/config"
-	"github.com/Spazzy757/paul/pkg/helpers"
+	"fmt"
+	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
-	"golang.org/x/oauth2"
+	"io/ioutil"
 	"log"
-	"net/http"
 )
 
-const githubApi = "https://api.github.com"
+const configFile = "PAUL.yaml"
 
-const openPRMessage = "Thanks for Opening a PR In this Repo!\nWe are validating the PR and will be in contact shortly"
+func getPaulConfig(
+	owner, repo *string,
+	client *github.Client,
+	contentUrl string,
+	ctx context.Context,
+) (types.PaulConfig, error) {
+	var paulCfg types.PaulConfig
+
+	response, err := client.Repositories.DownloadContents(
+		ctx,
+		*owner,
+		*repo,
+		configFile,
+		&github.RepositoryContentGetOptions{
+			Ref: "main",
+		},
+	)
+	if err != nil {
+		return paulCfg, fmt.Errorf("unable to download config file: %s", err)
+	}
+	defer response.Close()
+
+	bytesConfig, err := ioutil.ReadAll(response)
+	if err != nil {
+		return paulCfg, fmt.Errorf("unable to read github's response: %s", err)
+	}
+	paulCfg.LoadConfig(bytesConfig)
+	return paulCfg, nil
+}
+
+func RunPullRequestChecks(event *github.PullRequestEvent) {
+	client, ctx := getClient(*event.Installation.ID)
+	cfg, err := getPaulConfig(
+		event.Repo.Owner.Login,
+		event.Repo.Name,
+		client,
+		event.Repo.GetContentsURL(),
+		ctx,
+	)
+	if err != nil {
+		log.Fatalf("An error occurred fetching config %v", err)
+	}
+	if cfg.PullRequests.OpenMessage != "" && *event.Action == "opened" {
+		pr := &pullRequestClient{ctx: ctx, client: client.PullRequests}
+		comment(event.GetPullRequest(), pr, cfg.PullRequests.OpenMessage)
+	}
+}
 
 type pullRequest interface {
-	CreateReview(ctx context.Context, owner string, repo string, number int, review *github.PullRequestReviewRequest) (*github.PullRequestReview, *github.Response, error)
+	CreateReview(
+		ctx context.Context,
+		owner string,
+		repo string,
+		number int,
+		review *github.PullRequestReviewRequest,
+	) (*github.PullRequestReview, *github.Response, error)
 }
 
 type pullRequestClient struct {
 	ctx    context.Context
 	client pullRequest
-}
-
-func IncomingWebhook(data []byte, r *http.Request) {
-	ctx := context.Background()
-	event, err := github.ParseWebHook(github.WebHookType(r), data)
-	if err != nil {
-		log.Printf("could not parse webhook: err=%s\n", err)
-		return
-	}
-	//payloadSecret := r.Header.Get("X-Hub-Signature")
-	//payload, err := github.ValidatePayload(r, []byte("my-secret-key"))
-	switch e := event.(type) {
-	case *github.PushEvent:
-		// this is a commit push, do something with it
-	case *github.PullRequestEvent:
-		gclient := getClient(*e.Installation.ID)
-		pr := &pullRequestClient{ctx: ctx, client: gclient.PullRequests}
-		// this is a pull request, do something with it
-		if e.Action != nil && *e.Action == "opened" {
-			_ = comment(e.PullRequest, pr, openPRMessage)
-		}
-	case *github.WatchEvent:
-		// https://developer.github.com/v3/activity/events/types/#watchevent
-		// someone starred our repository
-		if e.Action != nil && *e.Action == "starred" {
-			log.Printf("%s starred repository %s\n",
-				*e.Sender.Login, *e.Repo.FullName)
-		}
-	default:
-		log.Printf("unknown event type %s\n", github.WebHookType(r))
-		return
-	}
-}
-
-func getClient(installationId int64) *github.Client {
-	cfg, err := config.NewConfig()
-	if err != nil {
-		log.Fatalf("Can't load config: %v", err)
-	}
-	token, tokenErr := helpers.GetAccessToken(cfg, installationId)
-	if tokenErr != nil {
-		log.Fatalf("Can't load config: %v", err)
-	}
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: token},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-
-	client := github.NewClient(tc)
-	return client
 }
 
 func comment(pr *github.PullRequest, client *pullRequestClient, message string) error {

@@ -6,9 +6,10 @@ ARG SECRET_KEY
 RUN mkdir /build
 ADD . /build/
 WORKDIR /build
-RUN mkdir /secrets
 RUN CGO_ENABLED=0 GOOS=linux go build -o paul ./cmd/paul
 
+# Needed for the DO deployment as it does not have ability to volume files
+RUN mkdir /secrets
 RUN echo $PRIVATE_KEY > /secrets/paul-private-key
 RUN echo $SECRET_KEY > /secrets/paul-secret-key
 

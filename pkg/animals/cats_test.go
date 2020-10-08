@@ -1,4 +1,4 @@
-package cats
+package animals
 
 import (
 	"github.com/Spazzy757/paul/pkg/helpers"
@@ -23,7 +23,7 @@ func TestClientGetCat(t *testing.T) {
 	httpClient, teardown := helpers.MockHTTPClient(h)
 	defer teardown()
 
-	client := NewClient()
+	client := NewCatClient()
 	client.HttpClient = httpClient
 	client.Url = "https://example.com"
 	t.Run("Test Get Cat Returns Cat Type", func(t *testing.T) {

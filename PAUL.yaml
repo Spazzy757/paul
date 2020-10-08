@@ -7,3 +7,4 @@ pull_requests:
     If this is your first time contributing to Paul, please make
     sure to read the [CONTRIBUTING.md](https://github.com/Spazzy757/paul/blob/main/CONTRIBUTING.md)
   cats_enabled: true
+  dogs_enabled: true

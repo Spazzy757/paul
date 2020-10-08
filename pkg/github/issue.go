@@ -3,7 +3,7 @@ package github
 import (
 	"context"
 	"fmt"
-	"github.com/Spazzy757/paul/pkg/cats"
+	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/google/go-github/v32/github"
 	"log"
 	"strings"
@@ -60,10 +60,16 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 		// Switch statement to handle different commands
 		var err error
 		switch {
+		// Case of /cat command
 		case cmd == "cat" && cfg.PullRequests.CatsEnabled:
 			// Get the Cat Client
-			catClient := cats.NewClient()
-			err = handleCats(event, isClient, catClient)
+			animalClient := animals.NewCatClient()
+			err = handleCats(event, isClient, animalClient)
+		// Case of /dog command
+		case cmd == "dog" && cfg.PullRequests.DogsEnabled:
+			// Get the Dog Client
+			animalClient := animals.NewDogClient()
+			err = handleDogs(event, isClient, animalClient)
 		default:
 			break
 		}
@@ -87,16 +93,34 @@ func getCommand(comment string) (string, []string) {
 func handleCats(
 	is *github.IssueCommentEvent,
 	isClient *issueClient,
-	catClient *cats.Client,
+	catClient *animals.Client,
 ) error {
 	cat, err := catClient.GetCat()
 	if err != nil {
 		return err
 	}
-	message := fmt.Sprintf("I present my minion\n\n ![my favorite minion](%v)", cat.Url)
+	message := fmt.Sprintf("My Most Trusted Minion\n\n ![my favorite minion](%v)", cat.Url)
 	catErr := createIssueComment(is, isClient, message)
 	if catErr != nil {
 		return catErr
+	}
+	return nil
+}
+
+// handleDogs is the handler for the /dog command
+func handleDogs(
+	is *github.IssueCommentEvent,
+	isClient *issueClient,
+	dogClient *animals.Client,
+) error {
+	dog, err := dogClient.GetDog()
+	if err != nil {
+		return err
+	}
+	message := fmt.Sprintf("Despite how it looks it is well trained\n\n ![loyal soldier](%v)", dog.Url)
+	dogErr := createIssueComment(is, isClient, message)
+	if dogErr != nil {
+		return dogErr
 	}
 	return nil
 }

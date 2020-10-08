@@ -32,22 +32,20 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
+// GetAccessToken returns a Github OAuth Token
 func GetAccessToken(config config.Config, installationID int64) (string, error) {
-	token := os.Getenv("personal_access_token")
+	token := os.Getenv("PERSONAL_ACCESS_TOKEN")
 	if len(token) == 0 {
-
 		installationToken, tokenErr := makeAccessTokenForInstallation(
 			config.ApplicationID,
 			installationID,
-			config.PrivateKey)
-
+			config.PrivateKey,
+		)
 		if tokenErr != nil {
 			return "", tokenErr
 		}
-
 		token = installationToken
 	}
-
 	return token, nil
 }
 

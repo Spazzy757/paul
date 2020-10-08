@@ -1,9 +1,8 @@
-package cats
+package animals
 
 import (
 	"encoding/json"
 	"net/http"
-	"time"
 
 	"github.com/pkg/errors"
 )
@@ -12,29 +11,16 @@ const (
 	catsUrl = "https://api.thecatapi.com/v1/images/search"
 )
 
-type Client struct {
-	HttpClient *http.Client
-	Url        string
-}
-
-func NewClient() *Client {
-	client := Client{
-		HttpClient: &http.Client{
-			Timeout: 5 * time.Second,
-		},
-		Url: catsUrl,
-	}
-
-	return &client
-}
-
 type Cat struct {
 	Url string `json:"url"`
 }
 
+func NewCatClient() *Client {
+	return newClient(catsUrl)
+}
+
 // GetCat fetches a random cat url
 func (cli *Client) GetCat() (Cat, error) {
-
 	req, err := http.NewRequest("GET", cli.Url, nil)
 	if err != nil {
 		return Cat{}, errors.Wrap(err, "failed to build request")

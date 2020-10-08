@@ -21,4 +21,8 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - CatsEnabled", func(t *testing.T) {
 		assert.NotEqual(t, paulConfig.PullRequests.CatsEnabled, false)
 	})
+	t.Run("Test Loading Config - DogsEnabled", func(t *testing.T) {
+		assert.NotEqual(t, paulConfig.PullRequests.DogsEnabled, false)
+	})
+
 }

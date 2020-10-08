@@ -2,6 +2,8 @@ maintainers:
 - Spazzy757
 pull_requests:
   open_message: |
-    Greetings! Thank you for Contributing to my Source Code,
-    If This is your First Time Contributing to Paul, Please Make
-    To Read the `CONTRIBUTING.md`
+    Greetings!
+    Thank you for contributing to my source code,
+    If this is your first time contributing to Paul, please make
+    sure to read the [CONTRIBUTING.md](https://github.com/Spazzy757/paul/blob/main/CONTRIBUTING.md)
+  cats_enabled: true

@@ -16,17 +16,10 @@ func IncomingWebhook(data []byte, r *http.Request) {
 	//payloadSecret := r.Header.Get("X-Hub-Signature")
 	//payload, err := github.ValidatePayload(r, []byte("my-secret-key"))
 	switch e := event.(type) {
-	case *github.PushEvent:
-		// this is a commit push, do something with it
+	case *github.IssueCommentEvent:
+		IssueCommentHandler(e)
 	case *github.PullRequestEvent:
-		RunPullRequestChecks(e)
-	case *github.WatchEvent:
-		// https://developer.github.com/v3/activity/events/types/#watchevent
-		// someone starred our repository
-		if e.Action != nil && *e.Action == "starred" {
-			log.Printf("%s starred repository %s\n",
-				*e.Sender.Login, *e.Repo.FullName)
-		}
+		PullRequestHandler(e)
 	default:
 		log.Printf("unknown event type %s\n", github.WebHookType(r))
 		return

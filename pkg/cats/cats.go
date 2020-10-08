@@ -13,13 +13,13 @@ const (
 )
 
 type Client struct {
-	httpClient *http.Client
+	HttpClient *http.Client
 	Url        string
 }
 
 func NewClient() *Client {
 	client := Client{
-		httpClient: &http.Client{
+		HttpClient: &http.Client{
 			Timeout: 5 * time.Second,
 		},
 		Url: catsUrl,
@@ -40,7 +40,7 @@ func (cli *Client) GetCat() (Cat, error) {
 		return Cat{}, errors.Wrap(err, "failed to build request")
 	}
 
-	resp, err := cli.httpClient.Do(req)
+	resp, err := cli.HttpClient.Do(req)
 	if err != nil {
 		return Cat{}, errors.Wrap(err, "request failed")
 	}

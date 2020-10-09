@@ -4,10 +4,10 @@ name: CICD
 on:
   push:
     branches:
-    - master
+    - main
   pull_request:
     branches:
-    - master
+    - main
   release:
     types:
       - edited

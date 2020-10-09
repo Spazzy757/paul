@@ -21,7 +21,7 @@ func NewDogClient() *Client {
 	return newClient(dogUrl)
 }
 
-//GetDog fetches a random cat url
+//GetCat fetches a random cat url
 func (cli *Client) GetDog() (Dog, error) {
 	req, err := http.NewRequest("GET", cli.Url, nil)
 	if err != nil {

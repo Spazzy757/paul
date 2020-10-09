@@ -11,15 +11,17 @@ const (
 	dogUrl = "https://api.thedogapi.com/v1/images/search"
 )
 
+//Dog defines the Dog type
 type Dog struct {
 	Url string `json:"url"`
 }
 
+//NewDogClient returns a client of type Dog
 func NewDogClient() *Client {
 	return newClient(dogUrl)
 }
 
-// GetCat fetches a random cat url
+//GetDog fetches a random cat url
 func (cli *Client) GetDog() (Dog, error) {
 	req, err := http.NewRequest("GET", cli.Url, nil)
 	if err != nil {

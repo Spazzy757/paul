@@ -120,7 +120,7 @@ func getSignedJwtToken(appID string, privateKey string) (string, error) {
 	return string(signedVal), nil
 }
 
-// A helper to Mock out Http Servers for testing
+//MockHTTPClient A helper to Mock out Http Servers for testing
 func MockHTTPClient(handler http.Handler) (*http.Client, func()) {
 	s := httptest.NewTLSServer(handler)
 	cli := &http.Client{

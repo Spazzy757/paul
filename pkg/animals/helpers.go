@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+//Client defines the client struct
 type Client struct {
 	HttpClient *http.Client
 	Url        string

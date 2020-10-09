@@ -39,7 +39,7 @@ jobs:
         
     # Run build of the application
     - name: Run build
-      run: go build ./cmd/ephemeral-enforcer 
+      run: go build ./cmd/paul
       
     # Run vet & lint on the code
     - name: Run vet & lint

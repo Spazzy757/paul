@@ -13,6 +13,7 @@ type PaulConfig struct {
 type PullRequests struct {
 	OpenMessage string `yaml:"open_message"`
 	CatsEnabled bool   `yaml:"cats_enabled"`
+	DogsEnabled bool   `yaml:"dogs_enabled"`
 }
 
 func (pc *PaulConfig) LoadConfig(config []byte) {

@@ -1,11 +1,15 @@
 package helpers
 
 import (
+	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"github.com/Spazzy757/paul/pkg/config"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"time"
 
@@ -28,22 +32,20 @@ func GetEnv(key, fallback string) string {
 	return fallback
 }
 
+// GetAccessToken returns a Github OAuth Token
 func GetAccessToken(config config.Config, installationID int64) (string, error) {
-	token := os.Getenv("personal_access_token")
+	token := os.Getenv("PERSONAL_ACCESS_TOKEN")
 	if len(token) == 0 {
-
 		installationToken, tokenErr := makeAccessTokenForInstallation(
 			config.ApplicationID,
 			installationID,
-			config.PrivateKey)
-
+			config.PrivateKey,
+		)
 		if tokenErr != nil {
 			return "", tokenErr
 		}
-
 		token = installationToken
 	}
-
 	return token, nil
 }
 
@@ -115,4 +117,21 @@ func getSignedJwtToken(appID string, privateKey string) (string, error) {
 	}
 
 	return string(signedVal), nil
+}
+
+// A helper to Mock out Http Servers for testing
+func MockHTTPClient(handler http.Handler) (*http.Client, func()) {
+	s := httptest.NewTLSServer(handler)
+	cli := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			DialContext: func(_ context.Context, network, _ string) (net.Conn, error) {
+				return net.Dial(network, s.Listener.Addr().String())
+			},
+		},
+	}
+
+	return cli, s.Close
 }

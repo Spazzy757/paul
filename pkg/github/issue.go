@@ -3,10 +3,28 @@ package github
 import (
 	"context"
 	"fmt"
-	"github.com/Spazzy757/paul/pkg/cats"
+	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/google/go-github/v32/github"
 	"log"
+	"strings"
 )
+
+// interface to make testing logic easier
+type issue interface {
+	CreateComment(
+		ctx context.Context,
+		owner string,
+		repo string,
+		number int,
+		comment *github.IssueComment,
+	) (*github.IssueComment, *github.Response, error)
+}
+
+// struct to make testing logic easier
+type issueClient struct {
+	ctx    context.Context
+	client issue
+}
 
 /*
 IssueCommentHandler takes an incoming event of type IssueCommentEvent and
@@ -28,48 +46,83 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 	}
 
 	// Check comments for any commands
-	// TODO: Make this handle more commands
 	if *event.Action == "created" {
+		// Get Comment
 		comment := event.GetComment()
-		// Check command is /cat and see if repo has cats enabled
-		if *comment.Body == "/cat" && cfg.PullRequests.CatsEnabled {
-			handleCats(event, client, ctx)
+		// Get Which Command is run
+		// Throw away args as they are not used currently
+		cmd, _ := getCommand(*comment.Body)
+		// Create Client To pass through to handlers
+		isClient := &issueClient{
+			ctx:    ctx,
+			client: client.Issues,
+		}
+		// Switch statement to handle different commands
+		var err error
+		switch {
+		// Case of /cat command
+		case cmd == "cat" && cfg.PullRequests.CatsEnabled:
+			// Get the Cat Client
+			animalClient := animals.NewCatClient()
+			err = handleCats(event, isClient, animalClient)
+		// Case of /dog command
+		case cmd == "dog" && cfg.PullRequests.DogsEnabled:
+			// Get the Dog Client
+			animalClient := animals.NewDogClient()
+			err = handleDogs(event, isClient, animalClient)
+		default:
+			break
+		}
+		if err != nil {
+			log.Fatalf("An error occurred with the command %v: %v", cmd, err)
 		}
 	}
 }
 
-func handleCats(is *github.IssueCommentEvent, gclient *github.Client, ctx context.Context) {
-	catClient := cats.NewClient()
+// getCommand strips out the command and any args that are given
+func getCommand(comment string) (string, []string) {
+	var args []string
+	if !strings.HasPrefix(comment, "/") {
+		return "", args
+	}
+	commands := strings.Split(comment[1:], " ")
+	return commands[0], commands[1:]
+}
+
+// handleCats is the handler for the /cat command
+func handleCats(
+	is *github.IssueCommentEvent,
+	isClient *issueClient,
+	catClient *animals.Client,
+) error {
 	cat, err := catClient.GetCat()
 	if err != nil {
-		log.Fatalf("Error Occurred Fetching Cats: %v", err)
+		return err
 	}
-	isClient := &issueClient{
-		ctx:    ctx,
-		client: gclient.Issues,
-	}
-	message := fmt.Sprintf("I present my minion\n ![my favorite minion](%v)", cat.Url)
+	message := fmt.Sprintf("My Most Trusted Minion\n\n ![my favorite minion](%v)", cat.Url)
 	catErr := createIssueComment(is, isClient, message)
 	if catErr != nil {
-		log.Println("Failed Commenting Cats")
+		return catErr
 	}
+	return nil
 }
 
-// interface to make testing logic easier
-type issue interface {
-	CreateComment(
-		ctx context.Context,
-		owner string,
-		repo string,
-		number int,
-		comment *github.IssueComment,
-	) (*github.IssueComment, *github.Response, error)
-}
-
-// struct to make testing logic easier
-type issueClient struct {
-	ctx    context.Context
-	client issue
+// handleDogs is the handler for the /dog command
+func handleDogs(
+	is *github.IssueCommentEvent,
+	isClient *issueClient,
+	dogClient *animals.Client,
+) error {
+	dog, err := dogClient.GetDog()
+	if err != nil {
+		return err
+	}
+	message := fmt.Sprintf("Despite how it looks it is well trained\n\n ![loyal soldier](%v)", dog.Url)
+	dogErr := createIssueComment(is, isClient, message)
+	if dogErr != nil {
+		return dogErr
+	}
+	return nil
 }
 
 // createIssueComment sends a comment to an issue/pull request

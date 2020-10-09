@@ -1,20 +1,25 @@
 package github
 
 import (
+	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/google/go-github/v32/github"
 	"log"
 	"net/http"
 )
 
-func IncomingWebhook(data []byte, r *http.Request) {
-	event, err := github.ParseWebHook(github.WebHookType(r), data)
+func IncomingWebhook(r *http.Request) error {
+	// handle authentication
+	secret_key := helpers.GetEnv("SECRET_KEY", "")
+	payload, validationErr := github.ValidatePayload(r, []byte(secret_key))
+	if validationErr != nil {
+		return validationErr
+	}
+	event, err := github.ParseWebHook(github.WebHookType(r), payload)
 	if err != nil {
 		log.Printf("could not parse webhook: err=%s\n", err)
-		return
+		return err
 	}
-	// TODO: Create way to handle X-Hub-Signature
-	//payloadSecret := r.Header.Get("X-Hub-Signature")
-	//payload, err := github.ValidatePayload(r, []byte("my-secret-key"))
+
 	switch e := event.(type) {
 	case *github.IssueCommentEvent:
 		IssueCommentHandler(e)
@@ -22,6 +27,7 @@ func IncomingWebhook(data []byte, r *http.Request) {
 		PullRequestHandler(e)
 	default:
 		log.Printf("unknown event type %s\n", github.WebHookType(r))
-		return
+		return nil
 	}
+	return nil
 }

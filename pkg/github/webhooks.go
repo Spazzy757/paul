@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-github/v32/github"
 )
 
-//IncomingWebhook handles an imcoing webhook request
+//IncomingWebhook handles an incoming webhook request
 func IncomingWebhook(r *http.Request) error {
 	// handle authentication
 	secret_key := helpers.GetEnv("SECRET_KEY", "")

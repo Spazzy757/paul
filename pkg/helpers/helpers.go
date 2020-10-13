@@ -97,7 +97,6 @@ func makeAccessTokenForInstallation(appID string, installation int64, privateKey
 func getSignedJwtToken(appID string, privateKey string) (string, error) {
 
 	keyBytes := []byte(privateKey)
-
 	key, keyErr := jwt.ParseRSAPrivateKeyFromPEM(keyBytes)
 	if keyErr != nil {
 		return "", keyErr

@@ -1,0 +1,73 @@
+{
+    "action": "new_permissions_accepted",
+    "installation": {
+        "id": 11111111,
+        "account": {
+            "login": "Spazzy757",
+            "id": 11111111,
+            "node_id": "dGVzdAo=",
+            "avatar_url": "https://avatars1.githubusercontent.com/u/19777480?v=4",
+            "gravatar_id": "",
+            "url": "https://api.github.com/users/Spazzy757",
+            "html_url": "https://github.com/Spazzy757",
+            "followers_url": "https://api.github.com/users/Spazzy757/followers",
+            "following_url": "https://api.github.com/users/Spazzy757/following{/other_user}",
+            "gists_url": "https://api.github.com/users/Spazzy757/gists{/gist_id}",
+            "starred_url": "https://api.github.com/users/Spazzy757/starred{/owner}{/repo}",
+            "subscriptions_url": "https://api.github.com/users/Spazzy757/subscriptions",
+            "organizations_url": "https://api.github.com/users/Spazzy757/orgs",
+            "repos_url": "https://api.github.com/users/Spazzy757/repos",
+            "events_url": "https://api.github.com/users/Spazzy757/events{/privacy}",
+            "received_events_url": "https://api.github.com/users/Spazzy757/received_events",
+            "type": "User",
+            "site_admin": false
+        },
+        "repository_selection": "selected",
+        "access_tokens_url": "https://api.github.com/app/installations/12256835/access_tokens",
+        "repositories_url": "https://api.github.com/installation/repositories",
+        "html_url": "https://github.com/settings/installations/12256835",
+        "app_id": 11111111,
+        "app_slug": "paulthealien",
+        "target_id": 11111111,
+        "target_type": "User",
+        "permissions": {
+            "issues": "write",
+            "actions": "write",
+            "metadata": "read",
+            "pull_requests": "write"
+        },
+        "events": [
+            "issues",
+            "issue_comment",
+            "pull_request",
+            "pull_request_review",
+            "pull_request_review_comment",
+            "workflow_run"
+        ],
+        "created_at": "2020-10-07T13:01:07.000+02:00",
+        "updated_at": "2020-10-13T15:30:34.000+02:00",
+        "single_file_name": null,
+        "suspended_by": null,
+        "suspended_at": null
+    },
+    "sender": {
+        "login": "Spazzy757",
+        "id": 11111111,
+        "node_id": "dGVzdAo=",
+        "avatar_url": "https://avatars1.githubusercontent.com/u/19777480?v=4",
+        "gravatar_id": "",
+        "url": "https://api.github.com/users/Spazzy757",
+        "html_url": "https://github.com/Spazzy757",
+        "followers_url": "https://api.github.com/users/Spazzy757/followers",
+        "following_url": "https://api.github.com/users/Spazzy757/following{/other_user}",
+        "gists_url": "https://api.github.com/users/Spazzy757/gists{/gist_id}",
+        "starred_url": "https://api.github.com/users/Spazzy757/starred{/owner}{/repo}",
+        "subscriptions_url": "https://api.github.com/users/Spazzy757/subscriptions",
+        "organizations_url": "https://api.github.com/users/Spazzy757/orgs",
+        "repos_url": "https://api.github.com/users/Spazzy757/repos",
+        "events_url": "https://api.github.com/users/Spazzy757/events{/privacy}",
+        "received_events_url": "https://api.github.com/users/Spazzy757/received_events",
+        "type": "User",
+        "site_admin": false
+    }
+}

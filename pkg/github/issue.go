@@ -34,12 +34,12 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 	// load github client
 	client, ctx := getClient(*event.Installation.ID)
 	// load Paul Config from repo
+	rc := &repoClient{ctx: ctx, client: client.Repositories}
 	cfg, err := getPaulConfig(
 		event.Repo.Owner.Login,
 		event.Repo.Name,
-		client,
 		event.Repo.GetContentsURL(),
-		ctx,
+		rc,
 	)
 	if err != nil {
 		log.Fatalf("An error occurred fetching config %v", err)
@@ -95,7 +95,7 @@ func handleCats(
 	isClient *issueClient,
 	catClient *animals.Client,
 ) error {
-	cat, err := catClient.GetCat()
+	cat, err := catClient.GetLink()
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func handleDogs(
 	isClient *issueClient,
 	dogClient *animals.Client,
 ) error {
-	dog, err := dogClient.GetDog()
+	dog, err := dogClient.GetLink()
 	if err != nil {
 		return err
 	}

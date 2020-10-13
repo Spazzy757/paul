@@ -3,13 +3,16 @@ package github
 import (
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"log"
+
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
+
 	"golang.org/x/oauth2"
-	"io/ioutil"
-	"log"
 )
 
 const configFile = "PAUL.yaml"
@@ -34,16 +37,31 @@ func getClient(installationId int64) (*github.Client, context.Context) {
 }
 
 // TODO: Move This Logic into configs
+
+// interface to make testing logic easier
+type repo interface {
+	DownloadContents(
+		ctx context.Context,
+		owner, repo, filepath string,
+		opt *github.RepositoryContentGetOptions,
+	) (io.ReadCloser, error)
+}
+
+// struct to make testing logic easier
+type repoClient struct {
+	ctx    context.Context
+	client repo
+}
+
 func getPaulConfig(
 	owner, repo *string,
-	client *github.Client,
 	contentUrl string,
-	ctx context.Context,
+	client *repoClient,
 ) (types.PaulConfig, error) {
 	var paulCfg types.PaulConfig
 
-	response, err := client.Repositories.DownloadContents(
-		ctx,
+	response, err := client.client.DownloadContents(
+		client.ctx,
 		*owner,
 		*repo,
 		configFile,

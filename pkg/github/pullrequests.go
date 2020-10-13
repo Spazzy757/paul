@@ -10,12 +10,13 @@ import (
 //PullRequestHandler handler for the pull request event
 func PullRequestHandler(event *github.PullRequestEvent) {
 	client, ctx := getClient(*event.Installation.ID)
+	// Get Paul Config
+	rc := &repoClient{ctx: ctx, client: client.Repositories}
 	cfg, err := getPaulConfig(
 		event.Repo.Owner.Login,
 		event.Repo.Name,
-		client,
 		event.Repo.GetContentsURL(),
-		ctx,
+		rc,
 	)
 	if err != nil {
 		log.Fatalf("An error occurred fetching config %v", err)

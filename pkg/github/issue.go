@@ -34,12 +34,12 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 	// load github client
 	client, ctx := getClient(*event.Installation.ID)
 	// load Paul Config from repo
+	rc := &repoClient{ctx: ctx, client: client.Repositories}
 	cfg, err := getPaulConfig(
 		event.Repo.Owner.Login,
 		event.Repo.Name,
-		client,
 		event.Repo.GetContentsURL(),
-		ctx,
+		rc,
 	)
 	if err != nil {
 		log.Fatalf("An error occurred fetching config %v", err)

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/Spazzy757/paul/pkg/config"
 	"io/ioutil"
 	"net"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/Spazzy757/paul/pkg/config"
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
@@ -96,7 +96,6 @@ func makeAccessTokenForInstallation(appID string, installation int64, privateKey
 func getSignedJwtToken(appID string, privateKey string) (string, error) {
 
 	keyBytes := []byte(privateKey)
-
 	key, keyErr := jwt.ParseRSAPrivateKeyFromPEM(keyBytes)
 	if keyErr != nil {
 		return "", keyErr

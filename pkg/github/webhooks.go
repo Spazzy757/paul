@@ -1,12 +1,14 @@
 package github
 
 import (
-	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/google/go-github/v32/github"
 	"log"
 	"net/http"
+
+	"github.com/Spazzy757/paul/pkg/helpers"
+	"github.com/google/go-github/v32/github"
 )
 
+//IncomingWebhook handles an incoming webhook request
 func IncomingWebhook(r *http.Request) error {
 	// handle authentication
 	secret_key := helpers.GetEnv("SECRET_KEY", "")

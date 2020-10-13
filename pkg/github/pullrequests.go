@@ -2,10 +2,12 @@ package github
 
 import (
 	"context"
-	"github.com/google/go-github/v32/github"
 	"log"
+
+	"github.com/google/go-github/v32/github"
 )
 
+//PullRequestHandler handler for the pull request event
 func PullRequestHandler(event *github.PullRequestEvent) {
 	client, ctx := getClient(*event.Installation.ID)
 	cfg, err := getPaulConfig(

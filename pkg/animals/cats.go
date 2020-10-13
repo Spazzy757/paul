@@ -11,10 +11,12 @@ const (
 	catsUrl = "https://api.thecatapi.com/v1/images/search"
 )
 
+//Cat defines the struct value for the animal
 type Cat struct {
 	Url string `json:"url"`
 }
 
+//NewCatClient issues a new Cat client
 func NewCatClient() *Client {
 	return newClient(catsUrl)
 }

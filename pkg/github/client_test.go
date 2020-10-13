@@ -36,7 +36,7 @@ func TestGetPaulConfig(t *testing.T) {
 
 		owner := "test"
 		repo := "test"
-		cfg, err := getPaulConfig(&owner, &repo, "example.com", rc)
+		cfg, err := getPaulConfig(&owner, &repo, "example.com", "main", rc)
 		assert.Equal(t, nil, err)
 		assert.NotEqual(t, "", cfg.PullRequests.OpenMessage)
 		assert.NotEqual(t, cfg.PullRequests.CatsEnabled, false)

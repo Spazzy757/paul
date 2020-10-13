@@ -55,7 +55,7 @@ type repoClient struct {
 
 func getPaulConfig(
 	owner, repo *string,
-	contentUrl string,
+	contentUrl, defaultBranch string,
 	client *repoClient,
 ) (types.PaulConfig, error) {
 	var paulCfg types.PaulConfig

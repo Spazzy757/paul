@@ -9,10 +9,11 @@ import (
 
 const (
 	catsUrl = "https://api.thecatapi.com/v1/images/search"
+	dogUrl  = "https://api.thedogapi.com/v1/images/search"
 )
 
 //Cat defines the struct value for the animal
-type Cat struct {
+type Animal struct {
 	Url string `json:"url"`
 }
 
@@ -21,21 +22,26 @@ func NewCatClient() *Client {
 	return newClient(catsUrl)
 }
 
-// GetCat fetches a random cat url
-func (cli *Client) GetCat() (Cat, error) {
+//NewDogClient returns a client of type Dog
+func NewDogClient() *Client {
+	return newClient(dogUrl)
+}
+
+// GetLink fetches a random cat or dog url
+func (cli *Client) GetLink() (Animal, error) {
 	req, err := http.NewRequest("GET", cli.Url, nil)
 	if err != nil {
-		return Cat{}, errors.Wrap(err, "failed to build request")
+		return Animal{}, errors.Wrap(err, "failed to build request")
 	}
 
 	resp, err := cli.HttpClient.Do(req)
 	if err != nil {
-		return Cat{}, errors.Wrap(err, "request failed")
+		return Animal{}, errors.Wrap(err, "request failed")
 	}
 
-	var res []Cat
+	var res []Animal
 	if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
-		return Cat{}, errors.Wrap(err, "unmarshaling failed")
+		return Animal{}, errors.Wrap(err, "unmarshaling failed")
 	}
 
 	return res[0], nil

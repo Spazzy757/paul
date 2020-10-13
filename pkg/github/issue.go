@@ -95,7 +95,7 @@ func handleCats(
 	isClient *issueClient,
 	catClient *animals.Client,
 ) error {
-	cat, err := catClient.GetCat()
+	cat, err := catClient.GetLink()
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func handleDogs(
 	isClient *issueClient,
 	dogClient *animals.Client,
 ) error {
-	dog, err := dogClient.GetDog()
+	dog, err := dogClient.GetLink()
 	if err != nil {
 		return err
 	}

@@ -158,7 +158,7 @@ func TestHandleDogs(t *testing.T) {
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		switch e := event.(type) {
 		case *github.IssueCommentEvent:
-			if err := handleCats(e, is, dogClient); err != nil {
+			if err := handleDogs(e, is, dogClient); err != nil {
 				t.Fatalf("comment on issue: %v", err)
 			}
 		default:

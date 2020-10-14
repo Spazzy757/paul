@@ -1,41 +1,12 @@
 package github
 
 import (
-	"context"
 	"fmt"
 	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/google/go-github/v32/github"
 	"log"
 	"strings"
 )
-
-// interface to make testing logic easier for issue service
-type issueService interface {
-	CreateComment(
-		ctx context.Context,
-		owner, repo string,
-		number int,
-		comment *github.IssueComment,
-	) (*github.IssueComment, *github.Response, error)
-	AddLabelsToIssue(
-		ctx context.Context,
-		owner, repo string,
-		number int,
-		labels []string,
-	) ([]*github.Label, *github.Response, error)
-	RemoveLabelForIssue(
-		ctx context.Context,
-		owner, repo string,
-		number int,
-		label string,
-	) (*github.Response, error)
-}
-
-// struct to make testing logic easier
-type issueClient struct {
-	ctx          context.Context
-	issueService issueService
-}
 
 /*
 IssueCommentHandler takes an incoming event of type IssueCommentEvent and
@@ -45,7 +16,7 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 	// load github client
 	client, ctx := getClient(*event.Installation.ID)
 	// load Paul Config from repo
-	rc := &repoClient{ctx: ctx, client: client.Repositories}
+	rc := &repoClient{ctx: ctx, repoService: client.Repositories}
 	cfg, err := getPaulConfig(
 		event.Repo.Owner.Login,
 		event.Repo.Name,

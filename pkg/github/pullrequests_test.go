@@ -3,10 +3,12 @@ package github
 import (
 	"bytes"
 	"context"
-	"github.com/google/go-github/v32/github"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/google/go-github/v32/github"
+	"github.com/stretchr/testify/assert"
 )
 
 func getMockPayload() []byte {
@@ -14,11 +16,16 @@ func getMockPayload() []byte {
 	return []byte(file)
 }
 
-type mockClient struct {
+type mockPullRequestService struct {
 	resp *github.PullRequestReview
 }
 
-func (m *mockClient) CreateReview(ctx context.Context, owner string, repo string, number int, review *github.PullRequestReviewRequest) (*github.PullRequestReview, *github.Response, error) {
+func (m *mockPullRequestService) CreateReview(
+	ctx context.Context,
+	owner, repo string,
+	number int,
+	review *github.PullRequestReviewRequest,
+) (*github.PullRequestReview, *github.Response, error) {
 	return m.resp, nil, nil
 }
 
@@ -29,20 +36,11 @@ func TestCreateReview(t *testing.T) {
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "pull_request")
 		ctx := context.Background()
-		mc := &mockClient{
-			resp: &github.PullRequestReview{
-				ID: github.Int64(1),
-			},
-		}
-		pr := &pullRequestClient{ctx: ctx, client: mc}
+		mc := &mockPullRequestService{}
+		pr := &pullRequestClient{ctx: ctx, pullRequestService: mc}
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		switch e := event.(type) {
-		case *github.PullRequestEvent:
-			if err := comment(e.PullRequest, pr, "test"); err != nil {
-				t.Fatalf("createReview: %v", err)
-			}
-		default:
-			t.Fatalf("Event Type Not Pull Request")
-		}
+		e := event.(*github.PullRequestEvent)
+		err := reviewComment(e.PullRequest, pr, "test")
+		assert.Equal(t, nil, err)
 	})
 }

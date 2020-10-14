@@ -32,7 +32,7 @@ func TestGetPaulConfig(t *testing.T) {
 		mc := &mockRepoClient{
 			resp: ioutil.NopCloser(bytes.NewReader(yamlFile)),
 		}
-		rc := &repoClient{ctx: ctx, client: mc}
+		rc := &repoClient{ctx: ctx, repoService: mc}
 
 		owner := "test"
 		repo := "test"

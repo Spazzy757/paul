@@ -9,21 +9,32 @@ import (
 	"strings"
 )
 
-// interface to make testing logic easier
-type issue interface {
+// interface to make testing logic easier for issue service
+type issueService interface {
 	CreateComment(
 		ctx context.Context,
-		owner string,
-		repo string,
+		owner, repo string,
 		number int,
 		comment *github.IssueComment,
 	) (*github.IssueComment, *github.Response, error)
+	AddLabelsToIssue(
+		ctx context.Context,
+		owner, repo string,
+		number int,
+		labels []string,
+	) ([]*github.Label, *github.Response, error)
+	RemoveLabelForIssue(
+		ctx context.Context,
+		owner, repo string,
+		number int,
+		label string,
+	) (*github.Response, error)
 }
 
 // struct to make testing logic easier
 type issueClient struct {
-	ctx    context.Context
-	client issue
+	ctx          context.Context
+	issueService issueService
 }
 
 /*
@@ -52,11 +63,11 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 		comment := event.GetComment()
 		// Get Which Command is run
 		// Throw away args as they are not used currently
-		cmd, _ := getCommand(*comment.Body)
+		cmd, args := getCommand(*comment.Body)
 		// Create Client To pass through to handlers
 		isClient := &issueClient{
-			ctx:    ctx,
-			client: client.Issues,
+			ctx:          ctx,
+			issueService: client.Issues,
 		}
 		// Switch statement to handle different commands
 		var err error
@@ -65,12 +76,27 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 		case cmd == "cat" && cfg.PullRequests.CatsEnabled:
 			// Get the Cat Client
 			animalClient := animals.NewCatClient()
-			err = handleCats(event, isClient, animalClient)
+			err = catsHandler(event, isClient, animalClient)
 		// Case of /dog command
 		case cmd == "dog" && cfg.PullRequests.DogsEnabled:
 			// Get the Dog Client
 			animalClient := animals.NewDogClient()
-			err = handleDogs(event, isClient, animalClient)
+			err = dogsHandler(event, isClient, animalClient)
+		// Case /label command
+		case cmd == "label" &&
+			cfg.Labels &&
+			maintainerCheck(cfg.Maintainers, *event.Sender.Login):
+			// handle the labels
+			err = labelHandler(event, isClient, args)
+		// Case /remove-label command
+		case cmd == "remove-label" &&
+			cfg.Labels &&
+			maintainerCheck(cfg.Maintainers, *event.Sender.Login):
+			// handle the remove labels,
+			// if more than one arg is passed through, don't do anything
+			if len(args) == 1 {
+				err = removeLabelHandler(event, isClient, args[0])
+			}
 		default:
 			break
 		}
@@ -91,7 +117,7 @@ func getCommand(comment string) (string, []string) {
 }
 
 // handleCats is the handler for the /cat command
-func handleCats(
+func catsHandler(
 	is *github.IssueCommentEvent,
 	isClient *issueClient,
 	catClient *animals.Client,
@@ -109,7 +135,7 @@ func handleCats(
 }
 
 // handleDogs is the handler for the /dog command
-func handleDogs(
+func dogsHandler(
 	is *github.IssueCommentEvent,
 	isClient *issueClient,
 	dogClient *animals.Client,
@@ -126,6 +152,44 @@ func handleDogs(
 	return nil
 }
 
+//labelHandler handles the /label command
+func labelHandler(
+	is *github.IssueCommentEvent,
+	isClient *issueClient,
+	labels []string,
+) error {
+	_, _, err := isClient.issueService.AddLabelsToIssue(
+		isClient.ctx,
+		*is.Repo.Owner.Login,
+		is.Repo.GetName(),
+		is.Issue.GetNumber(),
+		labels,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//removeLabelHandler handles the /removelabel command
+func removeLabelHandler(
+	is *github.IssueCommentEvent,
+	isClient *issueClient,
+	label string,
+) error {
+	_, err := isClient.issueService.RemoveLabelForIssue(
+		isClient.ctx,
+		*is.Repo.Owner.Login,
+		is.Repo.GetName(),
+		is.Issue.GetNumber(),
+		label,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // createIssueComment sends a comment to an issue/pull request
 func createIssueComment(
 	is *github.IssueCommentEvent,
@@ -133,7 +197,7 @@ func createIssueComment(
 	message string,
 ) error {
 	comment := &github.IssueComment{Body: &message}
-	_, _, err := client.client.CreateComment(
+	_, _, err := client.issueService.CreateComment(
 		client.ctx,
 		*is.Repo.Owner.Login,
 		is.Repo.GetName(),
@@ -144,4 +208,14 @@ func createIssueComment(
 		return err
 	}
 	return nil
+}
+
+// maintainerCheck checks if requester is a maintainer
+func maintainerCheck(maintainerList []string, requester string) bool {
+	for _, maintainer := range maintainerList {
+		if maintainer == requester {
+			return true
+		}
+	}
+	return false
 }

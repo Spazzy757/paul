@@ -10,6 +10,7 @@ import (
 type PaulConfig struct {
 	Maintainers  []string     `yaml:"maintainers"`
 	PullRequests PullRequests `yaml:"pull_requests"`
+	Labels       bool         `yaml:"labels"`
 }
 
 //PullRequests struct

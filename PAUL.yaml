@@ -1,5 +1,7 @@
 maintainers:
 - Spazzy757
+# Allows for the /label command
+labels: true
 pull_requests:
   open_message: |
     Greetings!

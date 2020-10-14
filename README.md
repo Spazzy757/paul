@@ -14,7 +14,7 @@ If you would like to install Paul, you can find him in the [Github Apps](https:/
 
 ## Configuration
 
-Paul is configured using the `PAUL.yaml` in the root of your `main` branch (Currently master branch is not supported). You can have the following configurations:
+Paul is configured using the `PAUL.yaml` in the root of your default branch:
 
 ```yaml
 # List of maintainers of the repo
@@ -26,6 +26,8 @@ pull_requests:
     Greetings! Thanks for opening a PR
   # Enables the /cat command
   cats_enabled: true
+  # enables the /dog command
+  dogs_enabled: true
 ```
 
 ## Contributing

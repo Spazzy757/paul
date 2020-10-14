@@ -42,6 +42,15 @@ func (m *mockIssueService) AddLabelsToIssue(
 	return m.labels, nil, nil
 }
 
+func (m *mockIssueService) RemoveLabelForIssue(
+	ctx context.Context,
+	owner, repo string,
+	number int,
+	label string,
+) (*github.Response, error) {
+	return nil, nil
+}
+
 func TestCreateComment(t *testing.T) {
 	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
 		webhookPayload := getIssueCommentMockPayload("pr")
@@ -49,21 +58,12 @@ func TestCreateComment(t *testing.T) {
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "issue_comment")
 		ctx := context.Background()
-		mc := &mockIssueService{
-			resp: &github.IssueComment{
-				ID: github.Int64(1),
-			},
-		}
+		mc := &mockIssueService{}
 		pr := &issueClient{ctx: ctx, issueService: mc}
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		switch e := event.(type) {
-		case *github.IssueCommentEvent:
-			if err := createIssueComment(e, pr, "test"); err != nil {
-				t.Fatalf("comment on issue: %v", err)
-			}
-		default:
-			t.Fatalf("Event Type Not Issue Comment")
-		}
+		e := event.(*github.IssueCommentEvent)
+		err := createIssueComment(e, pr, "test")
+		assert.Equal(t, nil, err)
 	})
 }
 
@@ -123,14 +123,9 @@ func TestHandleCats(t *testing.T) {
 		}
 		is := &issueClient{ctx: ctx, issueService: mc}
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		switch e := event.(type) {
-		case *github.IssueCommentEvent:
-			if err := catsHandler(e, is, catClient); err != nil {
-				t.Fatalf("comment on issue: %v", err)
-			}
-		default:
-			t.Fatalf("Event Type Not Issue Comment")
-		}
+		e := event.(*github.IssueCommentEvent)
+		err := catsHandler(e, is, catClient)
+		assert.Equal(t, nil, err)
 	})
 }
 
@@ -159,21 +154,12 @@ func TestHandleDogs(t *testing.T) {
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "issue_comment")
 		ctx := context.Background()
-		mc := &mockIssueService{
-			resp: &github.IssueComment{
-				ID: github.Int64(1),
-			},
-		}
+		mc := &mockIssueService{}
 		is := &issueClient{ctx: ctx, issueService: mc}
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		switch e := event.(type) {
-		case *github.IssueCommentEvent:
-			if err := dogsHandler(e, is, dogClient); err != nil {
-				t.Fatalf("comment on issue: %v", err)
-			}
-		default:
-			t.Fatalf("Event Type Not Issue Comment")
-		}
+		e := event.(*github.IssueCommentEvent)
+		err := dogsHandler(e, is, dogClient)
+		assert.Equal(t, nil, err)
 	})
 }
 
@@ -190,13 +176,26 @@ func TestHandleLabels(t *testing.T) {
 		}
 		is := &issueClient{ctx: ctx, issueService: mc}
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		switch e := event.(type) {
-		case *github.IssueCommentEvent:
-			err := labelHandler(e, is, []string{"test"})
-			assert.Equal(t, nil, err)
-		default:
-			t.Fatalf("Event Type Not Issue Comment")
-		}
+		e := event.(*github.IssueCommentEvent)
+		err := labelHandler(e, is, []string{"test"})
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestHandleRemoveLabels(t *testing.T) {
+	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		// Just needed to get the right event type
+		webhookPayload := getIssueCommentMockPayload("dog-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		ctx := context.Background()
+		mc := &mockIssueService{}
+		is := &issueClient{ctx: ctx, issueService: mc}
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := removeLabelHandler(e, is, "test")
+		assert.Equal(t, nil, err)
 	})
 }
 

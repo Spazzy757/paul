@@ -23,6 +23,12 @@ type issueService interface {
 		number int,
 		labels []string,
 	) ([]*github.Label, *github.Response, error)
+	RemoveLabelForIssue(
+		ctx context.Context,
+		owner, repo string,
+		number int,
+		label string,
+	) (*github.Response, error)
 }
 
 // struct to make testing logic easier
@@ -76,9 +82,21 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 			// Get the Dog Client
 			animalClient := animals.NewDogClient()
 			err = dogsHandler(event, isClient, animalClient)
-		case cmd == "label" && cfg.Labels && maintainerCheck(cfg.Maintainers, *event.Sender.Login):
+		// Case /label command
+		case cmd == "label" &&
+			cfg.Labels &&
+			maintainerCheck(cfg.Maintainers, *event.Sender.Login):
 			// handle the labels
 			err = labelHandler(event, isClient, args)
+		// Case /remove-label command
+		case cmd == "remove-label" &&
+			cfg.Labels &&
+			maintainerCheck(cfg.Maintainers, *event.Sender.Login):
+			// handle the remove labels,
+			// if more than one arg is passed through, don't do anything
+			if len(args) == 1 {
+				err = removeLabelHandler(event, isClient, args[0])
+			}
 		default:
 			break
 		}
@@ -146,6 +164,25 @@ func labelHandler(
 		is.Repo.GetName(),
 		is.Issue.GetNumber(),
 		labels,
+	)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+//removeLabelHandler handles the /removelabel command
+func removeLabelHandler(
+	is *github.IssueCommentEvent,
+	isClient *issueClient,
+	label string,
+) error {
+	_, err := isClient.issueService.RemoveLabelForIssue(
+		isClient.ctx,
+		*is.Repo.Owner.Login,
+		is.Repo.GetName(),
+		is.Issue.GetNumber(),
+		label,
 	)
 	if err != nil {
 		return err

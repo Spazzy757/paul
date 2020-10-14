@@ -39,6 +39,7 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 		event.Repo.Owner.Login,
 		event.Repo.Name,
 		event.Repo.GetContentsURL(),
+		event.Repo.GetDefaultBranch(),
 		rc,
 	)
 	if err != nil {

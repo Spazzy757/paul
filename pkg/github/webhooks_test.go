@@ -6,10 +6,12 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
 
+	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,13 +19,13 @@ func TestIncomingWebhook(t *testing.T) {
 	os.Setenv("SECRET_KEY", "test")
 	t.Run("Test Unknown Webhook Payload is Handled correctly", func(t *testing.T) {
 		webhookPayload := getIssueCommentMockPayload("installation")
-
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "installation")
 		req.Header.Set("Content-Type", "application/json")
 		signature := generateGitHubSha("test", webhookPayload)
 		req.Header.Set("X-Hub-Signature", signature)
-		err := IncomingWebhook(req)
+		mClient := test.GetMockClient()
+		err := IncomingWebhook(req, mClient)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Incoming Webhook Fails if payload is incorrect", func(t *testing.T) {
@@ -32,7 +34,8 @@ func TestIncomingWebhook(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		signature := generateGitHubSha("test", []byte(`1234`))
 		req.Header.Set("X-Hub-Signature", signature)
-		err := IncomingWebhook(req)
+		mClient := test.GetMockClient()
+		err := IncomingWebhook(req, mClient)
 		assert.NotEqual(t, nil, err)
 	})
 	t.Run("Test Incoming Webhook Validation Fails if Not Correct", func(t *testing.T) {
@@ -42,8 +45,44 @@ func TestIncomingWebhook(t *testing.T) {
 		req.Header.Set("Content-Type", "application/json")
 		signature := generateGitHubSha("notcorrect", webhookPayload)
 		req.Header.Set("X-Hub-Signature", signature)
-		err := IncomingWebhook(req)
+		mClient := test.GetMockClient()
+		err := IncomingWebhook(req, mClient)
 		assert.NotEqual(t, nil, err)
+	})
+	t.Run("Test Incoming Webhook checks PR", func(t *testing.T) {
+		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		assert.Equal(t, nil, err)
+
+		webhookPayload := getIssueCommentMockPayload("merged-pr")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+		req.Header.Set("Content-Type", "application/json")
+		signature := generateGitHubSha("test", webhookPayload)
+		req.Header.Set("X-Hub-Signature", signature)
+		mClient := test.GetMockClient()
+		mClient.RepoService = &test.MockRepoService{
+			DownloadContentsResp: ioutil.NopCloser(bytes.NewReader(yamlFile)),
+		}
+		err = IncomingWebhook(req, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Incoming Webhook checks Issue Comment", func(t *testing.T) {
+		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		assert.Equal(t, nil, err)
+
+		webhookPayload := getIssueCommentMockPayload("cat-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		req.Header.Set("Content-Type", "application/json")
+		signature := generateGitHubSha("test", webhookPayload)
+		req.Header.Set("X-Hub-Signature", signature)
+		mClient := test.GetMockClient()
+		mClient.RepoService = &test.MockRepoService{
+			DownloadContentsResp: ioutil.NopCloser(bytes.NewReader(yamlFile)),
+		}
+
+		err = IncomingWebhook(req, mClient)
+		assert.Equal(t, nil, err)
 	})
 
 }

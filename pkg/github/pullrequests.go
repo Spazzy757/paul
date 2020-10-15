@@ -1,35 +1,36 @@
 package github
 
 import (
+	"context"
+	"fmt"
+
+	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
 )
 
 //PullRequestHandler handler for the pull request event
-func PullRequestHandler(event *github.PullRequestEvent) error {
-	client, ctx, clientErr := getClient(*event.Installation.ID)
-	if clientErr != nil {
-		return clientErr
-	}
+func PullRequestHandler(
+	ctx context.Context,
+	event *github.PullRequestEvent,
+	client *github.Client,
+) error {
 	// Get Paul Config
-	rc := &repoClient{ctx: ctx, repoService: client.Repositories}
-	cfg, configErr := getPaulConfig(
+	cfg, configErr := config.GetPaulConfig(
+		ctx,
 		event.Repo.Owner.Login,
 		event.Repo.Name,
 		event.Repo.GetContentsURL(),
 		event.Repo.GetDefaultBranch(),
-		rc,
+		client,
 	)
 	if configErr != nil {
 		return configErr
 	}
 	var err error
 	if firstPRCheck(cfg.PullRequests.OpenMessage, *event.Action) {
-		client := &pullRequestClient{
-			ctx:                ctx,
-			pullRequestService: client.PullRequests,
-		}
 		err = reviewComment(
+			ctx,
 			event.GetPullRequest(),
 			client,
 			cfg.PullRequests.OpenMessage,
@@ -41,11 +42,8 @@ func PullRequestHandler(event *github.PullRequestEvent) error {
 		event.Repo.GetDefaultBranch(),
 		event.PullRequest.Head.GetRef(),
 	) {
-		client := &gitClient{
-			ctx:        ctx,
-			gitService: client.Git,
-		}
 		err = branchDestroyer(
+			ctx,
 			event.GetPullRequest(),
 			client,
 			event.PullRequest.Head.GetRef(),
@@ -73,16 +71,17 @@ func branchDestroyerCheck(
 
 //reviewComment sends a review comment to a Pull Request
 func reviewComment(
+	ctx context.Context,
 	pr *github.PullRequest,
-	client *pullRequestClient,
+	client *github.Client,
 	message string,
 ) error {
 	pullRequestReviewRequest := &github.PullRequestReviewRequest{
 		Body:  &message,
 		Event: github.String("COMMENT"),
 	}
-	_, _, err := client.pullRequestService.CreateReview(
-		client.ctx,
+	_, _, err := client.PullRequests.CreateReview(
+		ctx,
 		*pr.Base.User.Login,
 		pr.Base.Repo.GetName(),
 		pr.GetNumber(),
@@ -93,15 +92,16 @@ func reviewComment(
 
 //branchDestroyer will delete a branch
 func branchDestroyer(
+	ctx context.Context,
 	pr *github.PullRequest,
-	client *gitClient,
+	client *github.Client,
 	branch string,
 ) error {
-	_, err := client.gitService.DeleteRef(
-		client.ctx,
+	_, err := client.Git.DeleteRef(
+		ctx,
 		*pr.Base.User.Login,
 		pr.Base.Repo.GetName(),
-		branch,
+		fmt.Sprintf("refs/heads/%v", branch),
 	)
 	return err
 }

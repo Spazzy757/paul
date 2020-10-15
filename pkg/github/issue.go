@@ -1,30 +1,32 @@
 package github
 
 import (
+	"context"
 	"fmt"
-	"github.com/Spazzy757/paul/pkg/animals"
-	"github.com/google/go-github/v32/github"
 	"strings"
+
+	"github.com/Spazzy757/paul/pkg/animals"
+	"github.com/Spazzy757/paul/pkg/config"
+	"github.com/google/go-github/v32/github"
 )
 
 /*
 IssueCommentHandler takes an incoming event of type IssueCommentEvent and
 runs logic against it
 */
-func IssueCommentHandler(event *github.IssueCommentEvent) error {
-	// load github client
-	client, ctx, clientErr := getClient(*event.Installation.ID)
-	if clientErr != nil {
-		return clientErr
-	}
+func IssueCommentHandler(
+	ctx context.Context,
+	event *github.IssueCommentEvent,
+	client *github.Client,
+) error {
 	// load Paul Config from repo
-	rc := &repoClient{ctx: ctx, repoService: client.Repositories}
-	cfg, configErr := getPaulConfig(
+	cfg, configErr := config.GetPaulConfig(
+		ctx,
 		event.Repo.Owner.Login,
 		event.Repo.Name,
 		event.Repo.GetContentsURL(),
 		event.Repo.GetDefaultBranch(),
-		rc,
+		client,
 	)
 	if configErr != nil {
 		return configErr
@@ -38,29 +40,24 @@ func IssueCommentHandler(event *github.IssueCommentEvent) error {
 		// Get Which Command is run
 		// Throw away args as they are not used currently
 		cmd, args := getCommand(*comment.Body)
-		// Create Client To pass through to handlers
-		isClient := &issueClient{
-			ctx:          ctx,
-			issueService: client.Issues,
-		}
 		// Switch statement to handle different commands
 		switch {
 		// Case of /cat command
 		case cmd == "cat" && cfg.PullRequests.CatsEnabled:
 			// Get the Cat Client
 			animalClient := animals.NewCatClient()
-			err = catsHandler(event, isClient, animalClient)
+			err = catsHandler(ctx, event, client, animalClient)
 		// Case of /dog command
 		case cmd == "dog" && cfg.PullRequests.DogsEnabled:
 			// Get the Dog Client
 			animalClient := animals.NewDogClient()
-			err = dogsHandler(event, isClient, animalClient)
+			err = dogsHandler(ctx, event, client, animalClient)
 		// Case /label command
 		case cmd == "label" &&
 			cfg.Labels &&
 			checkStringInList(cfg.Maintainers, *event.Sender.Login):
 			// handle the labels
-			err = labelHandler(event, isClient, args)
+			err = labelHandler(ctx, event, client, args)
 		// Case /remove-label command
 		case cmd == "remove-label" &&
 			cfg.Labels &&
@@ -68,7 +65,7 @@ func IssueCommentHandler(event *github.IssueCommentEvent) error {
 			// handle the remove labels,
 			// if more than one arg is passed through, don't do anything
 			if len(args) == 1 {
-				err = removeLabelHandler(event, isClient, args[0])
+				err = removeLabelHandler(ctx, event, client, args[0])
 			}
 		default:
 			break
@@ -89,8 +86,9 @@ func getCommand(comment string) (string, []string) {
 
 // handleCats is the handler for the /cat command
 func catsHandler(
+	ctx context.Context,
 	is *github.IssueCommentEvent,
-	isClient *issueClient,
+	client *github.Client,
 	catClient *animals.Client,
 ) error {
 	cat, err := catClient.GetLink()
@@ -98,14 +96,15 @@ func catsHandler(
 		return err
 	}
 	message := fmt.Sprintf("My Most Trusted Minion\n\n ![my favorite minion](%v)", cat.Url)
-	err = createIssueComment(is, isClient, message)
+	err = createIssueComment(ctx, is, client, message)
 	return err
 }
 
 // handleDogs is the handler for the /dog command
 func dogsHandler(
+	ctx context.Context,
 	is *github.IssueCommentEvent,
-	isClient *issueClient,
+	client *github.Client,
 	dogClient *animals.Client,
 ) error {
 	dog, err := dogClient.GetLink()
@@ -113,18 +112,19 @@ func dogsHandler(
 		return err
 	}
 	message := fmt.Sprintf("Despite how it looks it is well trained\n\n ![loyal soldier](%v)", dog.Url)
-	err = createIssueComment(is, isClient, message)
+	err = createIssueComment(ctx, is, client, message)
 	return err
 }
 
 //labelHandler handles the /label command
 func labelHandler(
+	ctx context.Context,
 	is *github.IssueCommentEvent,
-	isClient *issueClient,
+	client *github.Client,
 	labels []string,
 ) error {
-	_, _, err := isClient.issueService.AddLabelsToIssue(
-		isClient.ctx,
+	_, _, err := client.Issues.AddLabelsToIssue(
+		ctx,
 		*is.Repo.Owner.Login,
 		is.Repo.GetName(),
 		is.Issue.GetNumber(),
@@ -135,12 +135,13 @@ func labelHandler(
 
 //removeLabelHandler handles the /removelabel command
 func removeLabelHandler(
+	ctx context.Context,
 	is *github.IssueCommentEvent,
-	isClient *issueClient,
+	client *github.Client,
 	label string,
 ) error {
-	_, err := isClient.issueService.RemoveLabelForIssue(
-		isClient.ctx,
+	_, err := client.Issues.RemoveLabelForIssue(
+		ctx,
 		*is.Repo.Owner.Login,
 		is.Repo.GetName(),
 		is.Issue.GetNumber(),
@@ -151,13 +152,14 @@ func removeLabelHandler(
 
 // createIssueComment sends a comment to an issue/pull request
 func createIssueComment(
+	ctx context.Context,
 	is *github.IssueCommentEvent,
-	client *issueClient,
+	client *github.Client,
 	message string,
 ) error {
 	comment := &github.IssueComment{Body: &message}
-	_, _, err := client.issueService.CreateComment(
-		client.ctx,
+	_, _, err := client.Issues.CreateComment(
+		ctx,
 		*is.Repo.Owner.Login,
 		is.Repo.GetName(),
 		is.Issue.GetNumber(),

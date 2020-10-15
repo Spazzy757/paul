@@ -45,6 +45,26 @@ func TestIncomingWebhook(t *testing.T) {
 		err := IncomingWebhook(req)
 		assert.NotEqual(t, nil, err)
 	})
+	t.Run("Test Incoming Webhook checks PR", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("merged-pr")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+		req.Header.Set("Content-Type", "application/json")
+		signature := generateGitHubSha("test", webhookPayload)
+		req.Header.Set("X-Hub-Signature", signature)
+		err := IncomingWebhook(req)
+		assert.NotEqual(t, nil, err)
+	})
+	t.Run("Test Incoming Webhook checks Issue Comment", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("cat-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		req.Header.Set("Content-Type", "application/json")
+		signature := generateGitHubSha("test", webhookPayload)
+		req.Header.Set("X-Hub-Signature", signature)
+		err := IncomingWebhook(req)
+		assert.NotEqual(t, nil, err)
+	})
 
 }
 

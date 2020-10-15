@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/helpers"
@@ -104,23 +103,23 @@ type issueClient struct {
 }
 
 //getClient returns an authorized Github Client
-func getClient(installationId int64) (*github.Client, context.Context) {
+func getClient(installationId int64) (*github.Client, context.Context, error) {
+	ctx := context.Background()
 	cfg, err := config.NewConfig()
 	if err != nil {
-		log.Fatalf("Can't load config: %v", err)
+		return &github.Client{}, ctx, err
 	}
 	token, tokenErr := helpers.GetAccessToken(cfg, installationId)
 	if tokenErr != nil {
-		log.Fatalf("Can't load config: %v", err)
+		return &github.Client{}, ctx, tokenErr
 	}
-	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
 	client := github.NewClient(tc)
-	return client, ctx
+	return client, ctx, nil
 }
 
 // TODO: Move This Logic into configs
@@ -150,6 +149,6 @@ func getPaulConfig(
 	if err != nil {
 		return paulCfg, fmt.Errorf("unable to read github's response: %s", err)
 	}
-	paulCfg.LoadConfig(bytesConfig)
-	return paulCfg, nil
+	err = paulCfg.LoadConfig(bytesConfig)
+	return paulCfg, err
 }

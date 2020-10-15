@@ -199,12 +199,12 @@ func TestHandleRemoveLabels(t *testing.T) {
 	})
 }
 
-func TestMaintainerCheck(t *testing.T) {
+func TestCheckStringInList(t *testing.T) {
 	maintainers := []string{"yes", "no", "maybe"}
 	t.Run("Test Maintainer returns true", func(t *testing.T) {
-		assert.Equal(t, true, maintainerCheck(maintainers, "yes"))
+		assert.Equal(t, true, checkStringInList(maintainers, "yes"))
 	})
 	t.Run("Test Non Maintainer returns false", func(t *testing.T) {
-		assert.Equal(t, false, maintainerCheck(maintainers, "I don't know"))
+		assert.Equal(t, false, checkStringInList(maintainers, "I don't know"))
 	})
 }

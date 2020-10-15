@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/google/go-github/v32/github"
-	"log"
 	"strings"
 )
 
@@ -12,22 +11,26 @@ import (
 IssueCommentHandler takes an incoming event of type IssueCommentEvent and
 runs logic against it
 */
-func IssueCommentHandler(event *github.IssueCommentEvent) {
+func IssueCommentHandler(event *github.IssueCommentEvent) error {
 	// load github client
-	client, ctx := getClient(*event.Installation.ID)
+	client, ctx, clientErr := getClient(*event.Installation.ID)
+	if clientErr != nil {
+		return clientErr
+	}
 	// load Paul Config from repo
 	rc := &repoClient{ctx: ctx, repoService: client.Repositories}
-	cfg, err := getPaulConfig(
+	cfg, configErr := getPaulConfig(
 		event.Repo.Owner.Login,
 		event.Repo.Name,
 		event.Repo.GetContentsURL(),
 		event.Repo.GetDefaultBranch(),
 		rc,
 	)
-	if err != nil {
-		log.Fatalf("An error occurred fetching config %v", err)
+	if configErr != nil {
+		return configErr
 	}
 
+	var err error
 	// Check comments for any commands
 	if *event.Action == "created" {
 		// Get Comment
@@ -41,7 +44,6 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 			issueService: client.Issues,
 		}
 		// Switch statement to handle different commands
-		var err error
 		switch {
 		// Case of /cat command
 		case cmd == "cat" && cfg.PullRequests.CatsEnabled:
@@ -56,13 +58,13 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 		// Case /label command
 		case cmd == "label" &&
 			cfg.Labels &&
-			maintainerCheck(cfg.Maintainers, *event.Sender.Login):
+			checkStringInList(cfg.Maintainers, *event.Sender.Login):
 			// handle the labels
 			err = labelHandler(event, isClient, args)
 		// Case /remove-label command
 		case cmd == "remove-label" &&
 			cfg.Labels &&
-			maintainerCheck(cfg.Maintainers, *event.Sender.Login):
+			checkStringInList(cfg.Maintainers, *event.Sender.Login):
 			// handle the remove labels,
 			// if more than one arg is passed through, don't do anything
 			if len(args) == 1 {
@@ -71,10 +73,8 @@ func IssueCommentHandler(event *github.IssueCommentEvent) {
 		default:
 			break
 		}
-		if err != nil {
-			log.Fatalf("An error occurred with the command %v: %v", cmd, err)
-		}
 	}
+	return err
 }
 
 // getCommand strips out the command and any args that are given
@@ -98,11 +98,8 @@ func catsHandler(
 		return err
 	}
 	message := fmt.Sprintf("My Most Trusted Minion\n\n ![my favorite minion](%v)", cat.Url)
-	catErr := createIssueComment(is, isClient, message)
-	if catErr != nil {
-		return catErr
-	}
-	return nil
+	err = createIssueComment(is, isClient, message)
+	return err
 }
 
 // handleDogs is the handler for the /dog command
@@ -116,11 +113,8 @@ func dogsHandler(
 		return err
 	}
 	message := fmt.Sprintf("Despite how it looks it is well trained\n\n ![loyal soldier](%v)", dog.Url)
-	dogErr := createIssueComment(is, isClient, message)
-	if dogErr != nil {
-		return dogErr
-	}
-	return nil
+	err = createIssueComment(is, isClient, message)
+	return err
 }
 
 //labelHandler handles the /label command
@@ -136,10 +130,7 @@ func labelHandler(
 		is.Issue.GetNumber(),
 		labels,
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 //removeLabelHandler handles the /removelabel command
@@ -155,10 +146,7 @@ func removeLabelHandler(
 		is.Issue.GetNumber(),
 		label,
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // createIssueComment sends a comment to an issue/pull request
@@ -175,16 +163,13 @@ func createIssueComment(
 		is.Issue.GetNumber(),
 		comment,
 	)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-// maintainerCheck checks if requester is a maintainer
-func maintainerCheck(maintainerList []string, requester string) bool {
-	for _, maintainer := range maintainerList {
-		if maintainer == requester {
+// checkStringInList checks if string is in a list of strings
+func checkStringInList(stringList []string, query string) bool {
+	for _, i := range stringList {
+		if i == query {
 			return true
 		}
 	}

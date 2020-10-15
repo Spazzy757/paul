@@ -1,6 +1,7 @@
 package router
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/Spazzy757/paul/pkg/github"
@@ -18,6 +19,7 @@ func GetRouter() *mux.Router {
 func GithubWebHookHandler(w http.ResponseWriter, r *http.Request) {
 	err := github.IncomingWebhook(r)
 	if err != nil {
+		log.Printf("Error: %v", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

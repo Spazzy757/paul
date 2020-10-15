@@ -1,7 +1,6 @@
 package github
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/Spazzy757/paul/pkg/helpers"
@@ -16,20 +15,18 @@ func IncomingWebhook(r *http.Request) error {
 	if validationErr != nil {
 		return validationErr
 	}
-	event, err := github.ParseWebHook(github.WebHookType(r), payload)
-	if err != nil {
-		log.Printf("could not parse webhook: err=%s\n", err)
-		return err
+	event, parseErr := github.ParseWebHook(github.WebHookType(r), payload)
+	if parseErr != nil {
+		return parseErr
 	}
-
+	var err error
 	switch e := event.(type) {
 	case *github.IssueCommentEvent:
-		IssueCommentHandler(e)
+		err = IssueCommentHandler(e)
 	case *github.PullRequestEvent:
-		PullRequestHandler(e)
+		err = PullRequestHandler(e)
 	default:
-		log.Printf("unknown event type %s\n", github.WebHookType(r))
-		return nil
+		break
 	}
-	return nil
+	return err
 }

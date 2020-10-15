@@ -2,11 +2,11 @@ package github
 
 import (
 	"bytes"
-	"context"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
@@ -17,42 +17,17 @@ func getMockPayload() []byte {
 	return []byte(file)
 }
 
-type mockPullRequestService struct {
-	resp *github.PullRequestReview
-}
-
-type mockGitService struct {
-	resp *github.Response
-}
-
-func (m *mockPullRequestService) CreateReview(
-	ctx context.Context,
-	owner, repo string,
-	number int,
-	review *github.PullRequestReviewRequest,
-) (*github.PullRequestReview, *github.Response, error) {
-	return m.resp, nil, nil
-}
-
-func (m *mockGitService) DeleteRef(
-	ctx context.Context,
-	owner, repo, ref string,
-) (*github.Response, error) {
-	return m.resp, nil
-}
-
 func TestCreateReview(t *testing.T) {
 	t.Run("Test Webhook is Handled correctly", func(t *testing.T) {
 		webhookPayload := getMockPayload()
 
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "pull_request")
-		ctx := context.Background()
-		mc := &mockPullRequestService{}
-		pr := &pullRequestClient{ctx: ctx, pullRequestService: mc}
+		mClient := test.GetMockClient()
+
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := reviewComment(e.PullRequest, pr, "test")
+		err := reviewComment(e.PullRequest, mClient, "test")
 		assert.Equal(t, nil, err)
 	})
 }
@@ -78,12 +53,11 @@ func TestBranchDestroyer(t *testing.T) {
 
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "pull_request")
-		ctx := context.Background()
-		mc := &mockGitService{}
-		pr := &gitClient{ctx: ctx, gitService: mc}
+		mClient := test.GetMockClient()
+
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := branchDestroyer(e.PullRequest, pr, "test")
+		err := branchDestroyer(e.PullRequest, mClient, "test")
 		assert.Equal(t, nil, err)
 	})
 }

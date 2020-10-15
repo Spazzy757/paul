@@ -3,10 +3,13 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
@@ -17,42 +20,33 @@ func getMockPayload() []byte {
 	return []byte(file)
 }
 
-type mockPullRequestService struct {
-	resp *github.PullRequestReview
-}
-
-type mockGitService struct {
-	resp *github.Response
-}
-
-func (m *mockPullRequestService) CreateReview(
-	ctx context.Context,
-	owner, repo string,
-	number int,
-	review *github.PullRequestReviewRequest,
-) (*github.PullRequestReview, *github.Response, error) {
-	return m.resp, nil, nil
-}
-
-func (m *mockGitService) DeleteRef(
-	ctx context.Context,
-	owner, repo, ref string,
-) (*github.Response, error) {
-	return m.resp, nil
-}
-
 func TestCreateReview(t *testing.T) {
 	t.Run("Test Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
 		webhookPayload := getMockPayload()
+		input := &github.PullRequestReviewRequest{
+			Body:  github.String("test"),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
 
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "pull_request")
-		ctx := context.Background()
-		mc := &mockPullRequestService{}
-		pr := &pullRequestClient{ctx: ctx, pullRequestService: mc}
+
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := reviewComment(e.PullRequest, pr, "test")
+		err := reviewComment(context.Background(), e.PullRequest, mClient, "test")
 		assert.Equal(t, nil, err)
 	})
 }
@@ -73,17 +67,25 @@ func TestFirstPRCheck(t *testing.T) {
 }
 
 func TestBranchDestroyer(t *testing.T) {
-	t.Run("Test Webhook is Handled correctly", func(t *testing.T) {
+	t.Run("Test Branch Destroyer Deletes Ref", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/git/refs/heads/test",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
+		)
+
 		webhookPayload := getMockPayload()
 
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "pull_request")
-		ctx := context.Background()
-		mc := &mockGitService{}
-		pr := &gitClient{ctx: ctx, gitService: mc}
+
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := branchDestroyer(e.PullRequest, pr, "test")
+		err := branchDestroyer(context.Background(), e.PullRequest, mClient, "test")
 		assert.Equal(t, nil, err)
 	})
 }

@@ -3,14 +3,17 @@ package github
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/Spazzy757/paul/pkg/animals"
-	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/google/go-github/v32/github"
-	"github.com/stretchr/testify/assert"
 	"io/ioutil"
 	"net/http"
 	"testing"
+
+	"github.com/Spazzy757/paul/pkg/animals"
+	"github.com/Spazzy757/paul/pkg/helpers"
+	"github.com/Spazzy757/paul/pkg/test"
+	"github.com/google/go-github/v32/github"
+	"github.com/stretchr/testify/assert"
 )
 
 func getIssueCommentMockPayload(payloadType string) []byte {
@@ -19,51 +22,190 @@ func getIssueCommentMockPayload(payloadType string) []byte {
 	return []byte(file)
 }
 
-type mockIssueService struct {
-	resp   *github.IssueComment
-	labels []*github.Label
-}
-
-func (m *mockIssueService) CreateComment(
-	ctx context.Context,
-	owner, repo string,
-	number int,
-	review *github.IssueComment,
-) (*github.IssueComment, *github.Response, error) {
-	return m.resp, nil, nil
-}
-
-func (m *mockIssueService) AddLabelsToIssue(
-	ctx context.Context,
-	owner, repo string,
-	number int,
-	labels []string,
-) ([]*github.Label, *github.Response, error) {
-	return m.labels, nil, nil
-}
-
-func (m *mockIssueService) RemoveLabelForIssue(
-	ctx context.Context,
-	owner, repo string,
-	number int,
-	label string,
-) (*github.Response, error) {
-	return nil, nil
-}
-
 func TestCreateComment(t *testing.T) {
 	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
 		webhookPayload := getIssueCommentMockPayload("pr")
+		input := &github.IssueComment{Body: github.String("test")}
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/0/comments",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.IssueComment)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := createIssueComment(context.Background(), e, mClient, "test")
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestHandleCats(t *testing.T) {
+	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		input := &github.IssueComment{
+			Body: github.String(
+				"My Most Trusted Minion\n\n ![my favorite minion](https://cdn2.thecatapi.com/images/40g.jpg)",
+			),
+		}
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/comments",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.IssueComment)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		webhookPayload := getIssueCommentMockPayload("cat-command")
+		catAPIResponse := `[
+            {
+                "breeds":[],
+                "id":"40g",
+                "url":"https://cdn2.thecatapi.com/images/40g.jpg",
+                "width":640,
+                "height":426
+            }
+        ]`
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(catAPIResponse))
+		})
+		httpClient, httpteardown := helpers.MockHTTPClient(h)
+		defer httpteardown()
+
+		catClient := animals.NewCatClient()
+		catClient.HttpClient = httpClient
+		catClient.Url = "https://example.com"
 
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "issue_comment")
-		ctx := context.Background()
-		mc := &mockIssueService{}
-		pr := &issueClient{ctx: ctx, issueService: mc}
+
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
-		err := createIssueComment(e, pr, "test")
+		err := catsHandler(context.Background(), e, mClient, catClient)
 		assert.Equal(t, nil, err)
+	})
+}
+
+func TestHandleDogs(t *testing.T) {
+	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		input := &github.IssueComment{
+			Body: github.String(
+				"Despite how it looks it is well trained\n\n ![loyal soldier](https://cdn2.thedogapi.com/images/40g.jpg)",
+			),
+		}
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/comments",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.IssueComment)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		webhookPayload := getIssueCommentMockPayload("dog-command")
+		dogAPIResponse := `[
+            {
+                "breeds":[],
+                "id":"40g",
+                "url":"https://cdn2.thedogapi.com/images/40g.jpg",
+                "width":640,
+                "height":426
+            }
+        ]`
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(dogAPIResponse))
+		})
+		httpClient, httpteardown := helpers.MockHTTPClient(h)
+		defer httpteardown()
+
+		dogClient := animals.NewDogClient()
+		dogClient.HttpClient = httpClient
+		dogClient.Url = "https://example.com"
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := dogsHandler(context.Background(), e, mClient, dogClient)
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestHandleLabels(t *testing.T) {
+	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		input := []string{"test"}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/labels",
+			func(w http.ResponseWriter, r *http.Request) {
+				var v []string
+				json.NewDecoder(r.Body).Decode(&v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `[{"url":"u"}]`)
+			},
+		)
+		// Just needed to get the right event type
+		webhookPayload := getIssueCommentMockPayload("dog-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := labelHandler(context.Background(), e, mClient, input)
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestHandleRemoveLabels(t *testing.T) {
+	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/labels/test",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
+		)
+
+		// Just needed to get the right event type
+		webhookPayload := getIssueCommentMockPayload("dog-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := removeLabelHandler(context.Background(), e, mClient, "test")
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestCheckStringInList(t *testing.T) {
+	maintainers := []string{"yes", "no", "maybe"}
+	t.Run("Test Maintainer returns true", func(t *testing.T) {
+		assert.Equal(t, true, checkStringInList(maintainers, "yes"))
+	})
+	t.Run("Test Non Maintainer returns false", func(t *testing.T) {
+		assert.Equal(t, false, checkStringInList(maintainers, "I don't know"))
 	})
 }
 
@@ -89,122 +231,4 @@ func TestGetCommand(t *testing.T) {
 		assert.Equal(t, expectedArgs, args)
 	})
 
-}
-
-func TestHandleCats(t *testing.T) {
-	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
-		webhookPayload := getIssueCommentMockPayload("cat-command")
-		catAPIResponse := `[
-            {
-                "breeds":[],
-                "id":"40g",
-                "url":"https://cdn2.thecatapi.com/images/40g.jpg",
-                "width":640,
-                "height":426
-            }
-        ]`
-		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(catAPIResponse))
-		})
-		httpClient, teardown := helpers.MockHTTPClient(h)
-		defer teardown()
-
-		catClient := animals.NewCatClient()
-		catClient.HttpClient = httpClient
-		catClient.Url = "https://example.com"
-
-		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
-		req.Header.Set("X-GitHub-Event", "issue_comment")
-		ctx := context.Background()
-		mc := &mockIssueService{
-			resp: &github.IssueComment{
-				ID: github.Int64(1),
-			},
-		}
-		is := &issueClient{ctx: ctx, issueService: mc}
-		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		e := event.(*github.IssueCommentEvent)
-		err := catsHandler(e, is, catClient)
-		assert.Equal(t, nil, err)
-	})
-}
-
-func TestHandleDogs(t *testing.T) {
-	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
-		webhookPayload := getIssueCommentMockPayload("dog-command")
-		dogAPIResponse := `[
-            {
-                "breeds":[],
-                "id":"40g",
-                "url":"https://cdn2.thedogapi.com/images/40g.jpg",
-                "width":640,
-                "height":426
-            }
-        ]`
-		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(dogAPIResponse))
-		})
-		httpClient, teardown := helpers.MockHTTPClient(h)
-		defer teardown()
-
-		dogClient := animals.NewDogClient()
-		dogClient.HttpClient = httpClient
-		dogClient.Url = "https://example.com"
-
-		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
-		req.Header.Set("X-GitHub-Event", "issue_comment")
-		ctx := context.Background()
-		mc := &mockIssueService{}
-		is := &issueClient{ctx: ctx, issueService: mc}
-		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		e := event.(*github.IssueCommentEvent)
-		err := dogsHandler(e, is, dogClient)
-		assert.Equal(t, nil, err)
-	})
-}
-
-func TestHandleLabels(t *testing.T) {
-	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
-		// Just needed to get the right event type
-		webhookPayload := getIssueCommentMockPayload("dog-command")
-		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
-		req.Header.Set("X-GitHub-Event", "issue_comment")
-
-		ctx := context.Background()
-		mc := &mockIssueService{
-			resp: &github.IssueComment{},
-		}
-		is := &issueClient{ctx: ctx, issueService: mc}
-		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		e := event.(*github.IssueCommentEvent)
-		err := labelHandler(e, is, []string{"test"})
-		assert.Equal(t, nil, err)
-	})
-}
-
-func TestHandleRemoveLabels(t *testing.T) {
-	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
-		// Just needed to get the right event type
-		webhookPayload := getIssueCommentMockPayload("dog-command")
-		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
-		req.Header.Set("X-GitHub-Event", "issue_comment")
-
-		ctx := context.Background()
-		mc := &mockIssueService{}
-		is := &issueClient{ctx: ctx, issueService: mc}
-		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		e := event.(*github.IssueCommentEvent)
-		err := removeLabelHandler(e, is, "test")
-		assert.Equal(t, nil, err)
-	})
-}
-
-func TestCheckStringInList(t *testing.T) {
-	maintainers := []string{"yes", "no", "maybe"}
-	t.Run("Test Maintainer returns true", func(t *testing.T) {
-		assert.Equal(t, true, checkStringInList(maintainers, "yes"))
-	})
-	t.Run("Test Non Maintainer returns false", func(t *testing.T) {
-		assert.Equal(t, false, checkStringInList(maintainers, "I don't know"))
-	})
 }

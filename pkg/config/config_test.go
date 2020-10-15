@@ -1,102 +1,57 @@
 package config
 
 import (
+	"context"
+	"fmt"
 	"io/ioutil"
-	"os"
-	"path"
+	"net/http"
 	"testing"
+
+	"github.com/Spazzy757/paul/pkg/test"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestNewConfigNoSecretPath(t *testing.T) {
+const (
+	// baseURLPath is a non-empty Client.BaseURL path to use during tests,
+	// to ensure relative URLs are used for all endpoints. See issue #752.
+	baseURLPath = "/api-v3"
+)
 
-	os.Setenv("SECRET_PATH", "")
+func TestGetPaulConfig(t *testing.T) {
+	t.Run("Test Read Paul Config Returns Valid Paul Config", func(t *testing.T) {
+		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		assert.Equal(t, nil, err)
 
-	_, err := NewConfig()
-
-	if err == nil {
-		t.Fail()
-	}
-
-	want := "SECRET_PATH env-var not set"
-	if err.Error() != want {
-		t.Errorf("want %q, got %q", want, err.Error())
-		t.Fail()
-	}
-}
-
-func TestNewConfigValidSecretPathWithApplicationID(t *testing.T) {
-	privateWant := "private"
-	secretWant := "secret"
-	appIDWant := "321"
-	tmpDir := os.TempDir()
-
-	ioutil.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
-	ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
-
-	defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
-	defer os.RemoveAll(path.Join(tmpDir, "paul-secret-key"))
-
-	os.Setenv("SECRET_PATH", tmpDir)
-	os.Setenv("APPLICATION_ID", appIDWant)
-
-	cfg, err := NewConfig()
-
-	if err != nil {
-		t.Errorf("%s", err.Error())
-		t.Fail()
-		return
-	}
-
-	if cfg.SecretKey != secretWant {
-		t.Errorf("want %q, got %q", secretWant, cfg.SecretKey)
-		t.Fail()
-	}
-
-	if cfg.PrivateKey != privateWant {
-		t.Errorf("want %q, got %q", privateWant, cfg.PrivateKey)
-		t.Fail()
-	}
-
-	if cfg.ApplicationID != appIDWant {
-		t.Errorf("want %q, got %q", appIDWant, cfg.ApplicationID)
-		t.Fail()
-	}
-}
-
-func TestGetFirstLine(t *testing.T) {
-	var exampleSecrets = []struct {
-		secret       string
-		expectedByte string
-	}{
-		{
-			secret:       "New-line \n",
-			expectedByte: "New-line ",
-		},
-		{
-			secret: `Newline and text 
-			`,
-			expectedByte: "Newline and text ",
-		},
-		{
-			secret:       `Example secret2 `,
-			expectedByte: `Example secret2 `,
-		},
-		{
-			secret:       "\n",
-			expectedByte: "",
-		},
-		{
-			secret:       "",
-			expectedByte: "",
-		},
-	}
-	for _, test := range exampleSecrets {
-
-		t.Run(string(test.secret), func(t *testing.T) {
-			stringNoLines := getFirstLine([]byte(test.secret))
-			if test.expectedByte != string(stringNoLines) {
-				t.Errorf("String after removal - wanted: \"%s\", got \"%s\"", test.expectedByte, test.secret)
-			}
+		mClient, mux, serverURL, teardown := test.GetMockClient()
+		defer teardown()
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/contents/",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{
+		            "type": "file",
+		            "name": "PAUL.yaml",
+		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
+		        }]`)
+			},
+		)
+		mux.HandleFunc("/download/PAUL.yaml", func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET")
+			fmt.Fprint(w, string(yamlFile))
 		})
-	}
+
+		owner := "Spazzy757"
+		repo := "paul"
+		cfg, err := GetPaulConfig(
+			context.Background(),
+			&owner, &repo,
+			"PAUL.yaml",
+			"main",
+			mClient,
+		)
+		assert.Equal(t, nil, err)
+		assert.NotEqual(t, "", cfg.PullRequests.OpenMessage)
+		assert.NotEqual(t, cfg.PullRequests.CatsEnabled, false)
+		assert.NotEqual(t, cfg.PullRequests.DogsEnabled, false)
+	})
 }

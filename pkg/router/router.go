@@ -1,10 +1,8 @@
 package router
 
 import (
-	"log"
 	"net/http"
 
-	paulclient "github.com/Spazzy757/paul/pkg/client"
 	"github.com/Spazzy757/paul/pkg/github"
 	"github.com/gorilla/mux"
 )
@@ -18,16 +16,8 @@ func GetRouter() *mux.Router {
 
 //GithubWebHookHandler .
 func GithubWebHookHandler(w http.ResponseWriter, r *http.Request) {
-	installationIDHeader := r.Header.Get("X-GitHub-Hook-Installation-Target-ID")
-	client, err := paulclient.GetClient(installationIDHeader)
+	err := github.IncomingWebhook(r)
 	if err != nil {
-		log.Printf("Error: %v", err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-	err = github.IncomingWebhook(r, client)
-	if err != nil {
-		log.Printf("Error: %v", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}

@@ -2,19 +2,24 @@ package github
 
 import (
 	"bytes"
+	"context"
+	"github.com/google/go-github/v32/github"
 	"io/ioutil"
 	"net/http"
 	"testing"
-
-	"github.com/Spazzy757/paul/pkg/test"
-	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v32/github"
-	"github.com/stretchr/testify/assert"
 )
 
 func getMockPayload() []byte {
 	file, _ := ioutil.ReadFile("../../mocks/pr.json")
 	return []byte(file)
+}
+
+type mockClient struct {
+	resp *github.PullRequestReview
+}
+
+func (m *mockClient) CreateReview(ctx context.Context, owner string, repo string, number int, review *github.PullRequestReviewRequest) (*github.PullRequestReview, *github.Response, error) {
+	return m.resp, nil, nil
 }
 
 func TestCreateReview(t *testing.T) {
@@ -23,99 +28,21 @@ func TestCreateReview(t *testing.T) {
 
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "pull_request")
-		mClient := test.GetMockClient()
-
-		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		e := event.(*github.PullRequestEvent)
-		err := reviewComment(e.PullRequest, mClient, "test")
-		assert.Equal(t, nil, err)
-	})
-}
-
-func TestFirstPRCheck(t *testing.T) {
-	t.Run("Test First PR - no message", func(t *testing.T) {
-		firstPR := firstPRCheck("", "opened")
-		assert.Equal(t, false, firstPR)
-	})
-	t.Run("Test First PR - should be true", func(t *testing.T) {
-		firstPR := firstPRCheck("Test", "opened")
-		assert.Equal(t, true, firstPR)
-	})
-	t.Run("Test First PR - should Be false", func(t *testing.T) {
-		firstPR := firstPRCheck("Test", "closed")
-		assert.Equal(t, false, firstPR)
-	})
-}
-
-func TestBranchDestroyer(t *testing.T) {
-	t.Run("Test Webhook is Handled correctly", func(t *testing.T) {
-		webhookPayload := getMockPayload()
-
-		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
-		req.Header.Set("X-GitHub-Event", "pull_request")
-		mClient := test.GetMockClient()
-
-		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
-		e := event.(*github.PullRequestEvent)
-		err := branchDestroyer(e.PullRequest, mClient, "test")
-		assert.Equal(t, nil, err)
-	})
-}
-
-func TestBranchDestroyerCheck(t *testing.T) {
-	protected := []string{"main", "master"}
-	cfg := &types.BranchDestroyer{
-		Enabled:           true,
-		ProtectedBranches: protected,
-	}
-	t.Run("Test Branch Destroyer - not enabled", func(t *testing.T) {
-		disabledCfg := &types.BranchDestroyer{
-			Enabled:           false,
-			ProtectedBranches: protected,
+		ctx := context.Background()
+		mc := &mockClient{
+			resp: &github.PullRequestReview{
+				ID: github.Int64(1),
+			},
 		}
-		destroyBranch := branchDestroyerCheck(
-			disabledCfg,
-			"completed",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, false, destroyBranch)
+		pr := &pullRequestClient{ctx: ctx, client: mc}
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		switch e := event.(type) {
+		case *github.PullRequestEvent:
+			if err := comment(e.PullRequest, pr, "test"); err != nil {
+				t.Fatalf("createReview: %v", err)
+			}
+		default:
+			t.Fatalf("Event Type Not Pull Request")
+		}
 	})
-	t.Run("Test Branch Destroyer - not completed", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"opened",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, false, destroyBranch)
-	})
-	t.Run("Test Branch Destroyer - default branch", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"main",
-		)
-		assert.Equal(t, false, destroyBranch)
-	})
-	t.Run("Test Branch Destroyer - protected branch", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"master",
-		)
-		assert.Equal(t, false, destroyBranch)
-	})
-	t.Run("Test Branch Destroyer - valid", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, true, destroyBranch)
-	})
-
 }

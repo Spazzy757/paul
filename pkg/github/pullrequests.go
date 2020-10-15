@@ -1,101 +1,68 @@
 package github
 
 import (
-	paulclient "github.com/Spazzy757/paul/pkg/client"
-	"github.com/Spazzy757/paul/pkg/config"
-	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v32/github"
+	"context"
 	"log"
+
+	"github.com/google/go-github/v32/github"
 )
 
 //PullRequestHandler handler for the pull request event
-func PullRequestHandler(
-	event *github.PullRequestEvent,
-	client *paulclient.GithubClient,
-) error {
+func PullRequestHandler(event *github.PullRequestEvent) {
+	client, ctx := getClient(*event.Installation.ID)
 	// Get Paul Config
-	cfg, configErr := config.GetPaulConfig(
+	rc := &repoClient{ctx: ctx, client: client.Repositories}
+	cfg, err := getPaulConfig(
 		event.Repo.Owner.Login,
 		event.Repo.Name,
 		event.Repo.GetContentsURL(),
 		event.Repo.GetDefaultBranch(),
-		client,
+		rc,
 	)
-	if configErr != nil {
-		return configErr
+	if err != nil {
+		log.Fatalf("An error occurred fetching config %v", err)
 	}
-	var err error
-	if firstPRCheck(cfg.PullRequests.OpenMessage, *event.Action) {
-		err = reviewComment(
-			event.GetPullRequest(),
-			client,
-			cfg.PullRequests.OpenMessage,
-		)
+	if cfg.PullRequests.OpenMessage != "" && *event.Action == "opened" {
+		pr := &pullRequestClient{ctx: ctx, client: client.PullRequests}
+		_ = comment(event.GetPullRequest(), pr, cfg.PullRequests.OpenMessage)
 	}
-	if branchDestroyerCheck(
-		&cfg.BranchDestroyer,
-		*event.Action,
-		event.Repo.GetDefaultBranch(),
-		event.PullRequest.Head.GetRef(),
-	) {
-		log.Println("HERE")
-		err = branchDestroyer(
-			event.GetPullRequest(),
-			client,
-			event.PullRequest.Head.GetRef(),
-		)
+	// Check comments for any commands
+	if *event.Action == "created" {
+		changes := event.GetChanges()
+		log.Printf("%+v", changes.Body)
 	}
-	return err
-
 }
 
-//firstPRCheck checks if a PR has just been opened and
-func firstPRCheck(message, action string) bool {
-	return message != "" && action == "opened"
+type pullRequest interface {
+	CreateReview(
+		ctx context.Context,
+		owner string,
+		repo string,
+		number int,
+		review *github.PullRequestReviewRequest,
+	) (*github.PullRequestReview, *github.Response, error)
 }
 
-//branchDestroyerCheck checks if branch can be destroyed
-func branchDestroyerCheck(
-	cfg *types.BranchDestroyer,
-	action, defaultBranch, destroyBranch string,
-) bool {
-	return cfg.Enabled &&
-		action == "completed" &&
-		destroyBranch != defaultBranch &&
-		!checkStringInList(cfg.ProtectedBranches, destroyBranch)
+type pullRequestClient struct {
+	ctx    context.Context
+	client pullRequest
 }
 
-//reviewComment sends a review comment to a Pull Request
-func reviewComment(
-	pr *github.PullRequest,
-	client *paulclient.GithubClient,
-	message string,
-) error {
+func comment(pr *github.PullRequest, client *pullRequestClient, message string) error {
 	pullRequestReviewRequest := &github.PullRequestReviewRequest{
 		Body:  &message,
 		Event: github.String("COMMENT"),
 	}
-	_, _, err := client.PullRequestService.CreateReview(
-		client.Ctx,
+
+	_, _, err := client.client.CreateReview(
+		client.ctx,
 		*pr.Base.User.Login,
 		pr.Base.Repo.GetName(),
 		pr.GetNumber(),
 		pullRequestReviewRequest,
 	)
-	return err
-}
-
-//branchDestroyer will delete a branch
-func branchDestroyer(
-	pr *github.PullRequest,
-	client *paulclient.GithubClient,
-	branch string,
-) error {
-	_, err := client.GitService.DeleteRef(
-		client.Ctx,
-		*pr.Base.User.Login,
-		pr.Base.Repo.GetName(),
-		branch,
-	)
-	return err
+	if err != nil {
+		return err
+	}
+	return nil
 }

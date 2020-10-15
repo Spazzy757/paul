@@ -1,15 +1,16 @@
 package types
 
 import (
+	"log"
+
 	"gopkg.in/yaml.v2"
 )
 
 //PaulConfig defines the struct for type
 type PaulConfig struct {
-	Maintainers     []string        `yaml:"maintainers"`
-	PullRequests    PullRequests    `yaml:"pull_requests"`
-	Labels          bool            `yaml:"labels"`
-	BranchDestroyer BranchDestroyer `yaml:"branch_destroyer"`
+	Maintainers  []string     `yaml:"maintainers"`
+	PullRequests PullRequests `yaml:"pull_requests"`
+	Labels       bool         `yaml:"labels"`
 }
 
 //PullRequests struct
@@ -19,14 +20,10 @@ type PullRequests struct {
 	DogsEnabled bool   `yaml:"dogs_enabled"`
 }
 
-//PullRequests struct
-type BranchDestroyer struct {
-	Enabled           bool     `yaml:"enabled"`
-	ProtectedBranches []string `yaml:"protected_branches"`
-}
-
 //LoadConfig loads the config for the type PaulConfig
-func (pc *PaulConfig) LoadConfig(config []byte) error {
+func (pc *PaulConfig) LoadConfig(config []byte) {
 	err := yaml.Unmarshal(config, pc)
-	return err
+	if err != nil {
+		log.Fatalf("Unmarshal: %v", err)
+	}
 }

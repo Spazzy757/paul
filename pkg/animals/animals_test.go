@@ -60,3 +60,32 @@ func TestClientGetDog(t *testing.T) {
 		assert.Equal(t, dog.Url, "https://cdn2.thedogapi.com/images/ryHJZlcNX_1280.jpg")
 	})
 }
+
+func TestAnimalClient(t *testing.T) {
+
+	client := NewDogClient()
+	t.Run("Test Error on Upstream Server", func(t *testing.T) {
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusMovedPermanently)
+		})
+		httpClient, teardown := helpers.MockHTTPClient(h)
+		defer teardown()
+
+		client.HttpClient = httpClient
+		client.Url = "https://example.com"
+		_, err := client.GetLink()
+		assert.NotEqual(t, nil, err)
+	})
+	t.Run("Test Error UnMarshaling Json", func(t *testing.T) {
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Write([]byte(`test`))
+		})
+		httpClient, teardown := helpers.MockHTTPClient(h)
+		defer teardown()
+
+		client.HttpClient = httpClient
+		client.Url = "https://example.com"
+		_, err := client.GetLink()
+		assert.NotEqual(t, nil, err)
+	})
+}

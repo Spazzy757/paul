@@ -3,7 +3,7 @@ package router
 import (
 	"context"
 	"encoding/json"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 
 	paulclient "github.com/Spazzy757/paul/pkg/client"
@@ -46,7 +46,9 @@ func GithubWebHookHandler(w http.ResponseWriter, r *http.Request) {
 
 func handleError(w http.ResponseWriter, err error) bool {
 	if err != nil {
-		log.Printf("Error: %v", err.Error())
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Error("webhook error occured")
 		w.WriteHeader(http.StatusBadRequest)
 		return true
 	}

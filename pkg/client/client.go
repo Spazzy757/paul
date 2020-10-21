@@ -152,11 +152,15 @@ func makeAccessTokenForInstallation(
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(
-		"%v/app/installations/%d/access_tokens",
-		c.BaseUrl,
-		installation,
-	), nil)
+	req, err := http.NewRequest(
+		http.MethodPost,
+		fmt.Sprintf(
+			"%v/app/installations/%d/access_tokens",
+			c.BaseUrl,
+			installation,
+		),
+		nil,
+	)
 	if err != nil {
 		return "", err
 	}
@@ -167,13 +171,7 @@ func makeAccessTokenForInstallation(
 	res, err := c.Client.Do(req)
 
 	if err != nil {
-		msg := fmt.Sprintf(
-			"can't get access_token for app_id: %s and installation_id: %d error: %v",
-			appID,
-			installation,
-			err,
-		)
-		return "", fmt.Errorf("%s", msg)
+		return "", fmt.Errorf("error getting Access token %v", err)
 	}
 
 	defer res.Body.Close()
@@ -185,10 +183,7 @@ func makeAccessTokenForInstallation(
 
 	jwtAuth := JWTAuth{}
 	jsonErr := json.Unmarshal(bytesOut, &jwtAuth)
-	if jsonErr != nil {
-		return "", jsonErr
-	}
-	return jwtAuth.Token, nil
+	return jwtAuth.Token, jsonErr
 }
 
 // GetSignedJwtToken get a tokens signed with private key

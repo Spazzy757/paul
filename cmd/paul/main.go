@@ -5,13 +5,22 @@ import (
 	"fmt"
 	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/Spazzy757/paul/pkg/router"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 )
+
+const startUpLog = `
+__________  _____   ____ ___.____     
+\______   \/  _  \ |    |   \    |    
+ |     ___/  /_\  \|    |   /    |    
+ |    |  /    |    \    |  /|    |___ 
+ |____|  \____|__  /______/ |_______ \
+                 \/                 \/
+`
 
 func main() {
 	// Termination Handeling
@@ -37,7 +46,11 @@ func main() {
 			log.Fatalf("listen: %s\n", err)
 		}
 	}()
-	log.Printf("Starting Server at :%v", addr)
+	fmt.Println(startUpLog)
+	log.WithFields(log.Fields{
+		"host": host,
+		"port": port,
+	}).Info("Starting Server")
 	<-termChan
 	// Any Code to Gracefully Shutdown should be done here
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

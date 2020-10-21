@@ -254,12 +254,13 @@ func TestMakeAccessTokenForInstallation(t *testing.T) {
 			"/app/installations/645/access_tokens",
 			func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, r.Method, "POST")
+				w.WriteHeader(http.StatusOK)
 				fmt.Fprint(w, `{"token":"123456"}`)
 			},
 		)
 		token, err := makeAccessTokenForInstallation(aClient, "123", 645, string(signingKey))
 		assert.Equal(t, nil, err)
-		assert.NotEqual(t, "", token)
+		assert.Equal(t, "123456", token)
 	})
 	t.Run("Test Getting Token For Installation", func(t *testing.T) {
 		aClient := &authClient{
@@ -270,7 +271,7 @@ func TestMakeAccessTokenForInstallation(t *testing.T) {
 			"/app/installations/644/access_tokens",
 			func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, r.Method, "POST")
-				w.WriteHeader(http.StatusMovedPermanently)
+				w.WriteHeader(http.StatusInternalServerError)
 			},
 		)
 		_, err := makeAccessTokenForInstallation(aClient, "123", 644, string(signingKey))

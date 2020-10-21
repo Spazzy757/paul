@@ -4,22 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/google/go-github/v32/github"
+	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 	"time"
-
-	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/google/go-github/v32/github"
-	"golang.org/x/oauth2"
 )
 
 const (
 	secretKeyFile  = "paul-secret-key"
 	privateKeyFile = "paul-private-key"
-	githubBaseUrl  = "https://api.github.com/"
+	githubBaseUrl  = "https://api.github.com"
 )
 
 // JWTAuth token issued by Github in response to signed JWT Token
@@ -151,20 +150,15 @@ func makeAccessTokenForInstallation(
 	if err != nil {
 		return "", err
 	}
-
-	req, err := http.NewRequest(
-		http.MethodPost,
-		fmt.Sprintf(
-			"%v/app/installations/%d/access_tokens",
-			c.BaseUrl,
-			installation,
-		),
-		nil,
+	url := fmt.Sprintf(
+		"%v/app/installations/%d/access_tokens",
+		c.BaseUrl,
+		installation,
 	)
+	req, err := http.NewRequest(http.MethodPost, url, nil)
 	if err != nil {
 		return "", err
 	}
-
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", signed))
 	req.Header.Add("Accept", "application/vnd.github.machine-man-preview+json")
 
@@ -175,7 +169,6 @@ func makeAccessTokenForInstallation(
 	}
 
 	defer res.Body.Close()
-
 	bytesOut, readErr := ioutil.ReadAll(res.Body)
 	if readErr != nil {
 		return "", readErr

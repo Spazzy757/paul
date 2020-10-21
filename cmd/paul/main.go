@@ -43,7 +43,9 @@ func main() {
 	// Run Server in Goroutine to handle Graceful Shutdowns
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			log.WithFields(log.Fields{
+				"error": err.Error(),
+			}).Fatal("Server Start Fail")
 		}
 	}()
 	fmt.Println(startUpLog)
@@ -58,7 +60,9 @@ func main() {
 		cancel()
 	}()
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server Shutdown Failed:%+v", err)
+		log.WithFields(log.Fields{
+			"error": err.Error(),
+		}).Fatal("Graceful Shutdown Failed")
 	}
-	log.Println("Shutting Down Gracefully")
+	log.Info("Shutting Down Gracefully")
 }

@@ -48,7 +48,7 @@ func handleError(w http.ResponseWriter, err error) bool {
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
-		}).Error("webhook error occured")
+		}).Error("webhook error occurred")
 		w.WriteHeader(http.StatusBadRequest)
 		return true
 	}

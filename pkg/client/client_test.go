@@ -6,8 +6,11 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path"
 	"testing"
@@ -124,6 +127,13 @@ func TestGetFirstLine(t *testing.T) {
 }
 
 func TestAccessToken(t *testing.T) {
+	serverUrl, _, teardown := ServerMock()
+	defer teardown()
+	aClient := &authClient{
+		BaseUrl: serverUrl,
+		Client:  http.DefaultClient,
+	}
+
 	privateWant := "private"
 	secretWant := "secret"
 	appIDWant := "321"
@@ -141,7 +151,7 @@ func TestAccessToken(t *testing.T) {
 
 		cfg, _ := newConfig()
 
-		token, _ := getAccessToken(cfg, 1)
+		token, _ := getAccessToken(aClient, cfg, 1)
 		assert.Equal(t, token, "123456789")
 	})
 	t.Run("Test Unset Environment Err", func(t *testing.T) {
@@ -149,7 +159,7 @@ func TestAccessToken(t *testing.T) {
 
 		cfg, _ := newConfig()
 
-		token, _ := getAccessToken(cfg, 1)
+		token, _ := getAccessToken(aClient, cfg, 1)
 		assert.Equal(t, token, "")
 	})
 }
@@ -204,4 +214,67 @@ func TestSignedJWTToken(t *testing.T) {
 		claims, _ = token.Claims.(*jwt.StandardClaims)
 		assert.Equal(t, "123456789", claims.Issuer)
 	})
+}
+
+func ServerMock() (baseURL string, mux *http.ServeMux, teardownFn func()) {
+	mux = http.NewServeMux()
+	srv := httptest.NewServer(mux)
+	return srv.URL, mux, srv.Close
+}
+
+func TestMakeAccessTokenForInstallation(t *testing.T) {
+	serverUrl, mux, teardown := ServerMock()
+	defer teardown()
+	tmpDir := os.TempDir()
+	reader := rand.Reader
+	bitSize := 4096
+	key, err := rsa.GenerateKey(reader, bitSize)
+	assert.Equal(t, err, nil)
+
+	pemSecretfile, _ := os.Create(path.Join(tmpDir, "privatekey.pem"))
+	defer pemSecretfile.Close()
+
+	_ = pem.Encode(
+		pemSecretfile,
+		&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	)
+
+	signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
+
+	defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
+	t.Run("Test Getting Token For Installation", func(t *testing.T) {
+		aClient := &authClient{
+			BaseUrl: serverUrl,
+			Client:  http.DefaultClient,
+		}
+		mux.HandleFunc(
+			"/app/installations/645/access_tokens",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "POST")
+				fmt.Fprint(w, `{"token":"123456"}`)
+			},
+		)
+		token, err := makeAccessTokenForInstallation(aClient, "123", 645, string(signingKey))
+		assert.Equal(t, nil, err)
+		assert.NotEqual(t, "", token)
+	})
+	t.Run("Test Getting Token For Installation", func(t *testing.T) {
+		aClient := &authClient{
+			BaseUrl: serverUrl,
+			Client:  http.DefaultClient,
+		}
+		mux.HandleFunc(
+			"/app/installations/644/access_tokens",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "POST")
+				w.WriteHeader(http.StatusMovedPermanently)
+			},
+		)
+		_, err := makeAccessTokenForInstallation(aClient, "123", 644, string(signingKey))
+		assert.NotEqual(t, nil, err)
+	})
+
 }

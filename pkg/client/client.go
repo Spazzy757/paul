@@ -16,10 +16,29 @@ import (
 	"golang.org/x/oauth2"
 )
 
+const (
+	secretKeyFile  = "paul-secret-key"
+	privateKeyFile = "paul-private-key"
+	githubBaseUrl  = "https://api.github.com/"
+)
+
 // JWTAuth token issued by Github in response to signed JWT Token
 type JWTAuth struct {
 	Token     string    `json:"token"`
 	ExpiresAt time.Time `json:"expires_at"`
+}
+
+// Config to run Paul
+type config struct {
+	SecretKey     string
+	PrivateKey    string
+	ApplicationID string
+}
+
+type authClient struct {
+	BaseUrl string
+	Client  *http.Client
+	Ctx     context.Context
 }
 
 //GetClient returns an authorized Github Client
@@ -29,7 +48,11 @@ func GetClient(installationID int64) (*github.Client, error) {
 	if err != nil {
 		return &github.Client{}, err
 	}
-	token, err := getAccessToken(cfg, installationID)
+	aClient := &authClient{
+		BaseUrl: githubBaseUrl,
+		Client:  http.DefaultClient,
+	}
+	token, err := getAccessToken(aClient, cfg, installationID)
 	if err != nil {
 		return &github.Client{}, err
 	}
@@ -41,18 +64,6 @@ func GetClient(installationID int64) (*github.Client, error) {
 	client := github.NewClient(tc)
 	return client, err
 }
-
-// Config to run Paul
-type config struct {
-	SecretKey     string
-	PrivateKey    string
-	ApplicationID string
-}
-
-const (
-	secretKeyFile  = "paul-secret-key"
-	privateKeyFile = "paul-private-key"
-)
 
 // NewConfig populates configuration from known-locations and gives
 // an error if configuration is missing from disk or environmental variables
@@ -112,10 +123,11 @@ func getFirstLine(secret []byte) []byte {
 }
 
 //GetAccessToken returns a Github OAuth Token
-func getAccessToken(config config, installationID int64) (string, error) {
+func getAccessToken(client *authClient, config config, installationID int64) (string, error) {
 	token := os.Getenv("PERSONAL_ACCESS_TOKEN")
 	if len(token) == 0 {
 		installationToken, tokenErr := makeAccessTokenForInstallation(
+			client,
 			config.ApplicationID,
 			installationID,
 			config.PrivateKey,
@@ -129,17 +141,22 @@ func getAccessToken(config config, installationID int64) (string, error) {
 }
 
 // MakeAccessTokenForInstallation makes an access token for an installation / private key
-func makeAccessTokenForInstallation(appID string, installation int64, privateKey string) (string, error) {
+func makeAccessTokenForInstallation(
+	c *authClient,
+	appID string,
+	installation int64,
+	privateKey string,
+) (string, error) {
 	signed, err := getSignedJwtToken(appID, privateKey)
 	if err != nil {
 		return "", err
 	}
 
-	req, err := http.NewRequest(http.MethodPost,
-		fmt.Sprintf(
-			"https://api.github.com/app/installations/%d/access_tokens",
-			installation,
-		), nil)
+	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf(
+		"%v/app/installations/%d/access_tokens",
+		c.BaseUrl,
+		installation,
+	), nil)
 	if err != nil {
 		return "", err
 	}
@@ -147,7 +164,7 @@ func makeAccessTokenForInstallation(appID string, installation int64, privateKey
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", signed))
 	req.Header.Add("Accept", "application/vnd.github.machine-man-preview+json")
 
-	res, err := http.DefaultClient.Do(req)
+	res, err := c.Client.Do(req)
 
 	if err != nil {
 		msg := fmt.Sprintf(

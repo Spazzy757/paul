@@ -26,7 +26,7 @@ func TestCreateComment(t *testing.T) {
 	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
 		mClient, mux, _, teardown := test.GetMockClient()
 		defer teardown()
-		webhookPayload := getIssueCommentMockPayload("pr")
+		webhookPayload := getIssueCommentMockPayload("opened-pr")
 		input := &github.IssueComment{Body: github.String("test")}
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "issue_comment")
@@ -188,7 +188,7 @@ func TestHandleRemoveLabels(t *testing.T) {
 		)
 
 		// Just needed to get the right event type
-		webhookPayload := getIssueCommentMockPayload("dog-command")
+		webhookPayload := getIssueCommentMockPayload("removelabel-command")
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "issue_comment")
 
@@ -285,7 +285,7 @@ func TestIssueCommentHandler(t *testing.T) {
 	})
 	ctx := context.Background()
 	t.Run("Test created Command", func(t *testing.T) {
-		webhookPayload := getIssueCommentMockPayload("pr")
+		webhookPayload := getIssueCommentMockPayload("opened-pr")
 		input := &github.IssueComment{Body: github.String("test")}
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
 		req.Header.Set("X-GitHub-Event", "issue_comment")
@@ -321,6 +321,50 @@ func TestIssueCommentHandler(t *testing.T) {
 				fmt.Fprint(w, `{"id":1}`)
 			},
 		)
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := IssueCommentHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test label Command", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("label-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		input := []string{"enhancement"}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/labels",
+			func(w http.ResponseWriter, r *http.Request) {
+				var v []string
+				json.NewDecoder(r.Body).Decode(&v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `[{"url":"u"}]`)
+			},
+		)
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := IssueCommentHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test remove label Command", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("removelabel-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/labels/enhancement",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
+		)
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := IssueCommentHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+
+	t.Run("Test unknown Command", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("unknown-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
 		err := IssueCommentHandler(ctx, e, mClient)

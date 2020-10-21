@@ -34,7 +34,7 @@
             "site_admin": false
         },
         "author_association": "OWNER",
-        "body": "/approve",
+        "body": "/remove-label enhancement",
         "performed_via_github_app": null
     },
     "repository": {

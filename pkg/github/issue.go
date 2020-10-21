@@ -69,6 +69,7 @@ func IssueCommentHandler(
 			}
 		case cmd == "approve" &&
 			cfg.PullRequests.AllowApproval &&
+			checkStringInList(cfg.Maintainers, *event.Sender.Login) &&
 			event.Issue.IsPullRequest():
 			err = approveHandler(ctx, event, client)
 		default:

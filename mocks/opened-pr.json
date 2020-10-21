@@ -1,5 +1,5 @@
 {
-    "action": "completed",
+    "action": "opened",
     "number": 1,
     "pull_request": {
         "id": 1111111111,

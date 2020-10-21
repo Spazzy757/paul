@@ -81,6 +81,12 @@ func TestIncomingWebhook(t *testing.T) {
 			assert.Equal(t, r.Method, "GET")
 			fmt.Fprint(w, string(yamlFile))
 		})
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/git/refs/heads/feature-added-webserver",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
+		)
 
 		webhookPayload := getIssueCommentMockPayload("merged-pr")
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))

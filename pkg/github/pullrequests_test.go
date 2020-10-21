@@ -16,7 +16,7 @@ import (
 )
 
 func getMockPayload() []byte {
-	file, _ := ioutil.ReadFile("../../mocks/pr.json")
+	file, _ := ioutil.ReadFile("../../mocks/opened-pr.json")
 	return []byte(file)
 }
 
@@ -144,6 +144,74 @@ func TestBranchDestroyerCheck(t *testing.T) {
 			"feature",
 		)
 		assert.Equal(t, true, destroyBranch)
+	})
+
+}
+
+func TestPullRequestHandler(t *testing.T) {
+	mClient, mux, serverURL, teardown := test.GetMockClient()
+	defer teardown()
+	yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+	assert.Equal(t, nil, err)
+	mux.HandleFunc(
+		"/repos/Spazzy757/paul/contents/",
+		func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET")
+			fmt.Fprint(w, `[{
+		            "type": "file",
+		            "name": "PAUL.yaml",
+		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
+		        }]`)
+		},
+	)
+	mux.HandleFunc("/download/PAUL.yaml", func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, "GET")
+		fmt.Fprint(w, string(yamlFile))
+	})
+	ctx := context.Background()
+	t.Run("Test firstPR", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("opened-pr")
+		input := &github.PullRequestReviewRequest{
+			Body: github.String(
+				"Greetings!\nThank you for contributing to my source code,\nIf this is your first time contributing to Paul, please make\nsure to read the [CONTRIBUTING.md](https://github.com/Spazzy757/paul/blob/main/CONTRIBUTING.md)\n",
+			),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := PullRequestHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test BranchDestroyer", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("merged-pr")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/git/refs/heads/feature-added-webserver",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
+		)
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := PullRequestHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
 	})
 
 }

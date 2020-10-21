@@ -232,3 +232,99 @@ func TestGetCommand(t *testing.T) {
 	})
 
 }
+
+func TestApproveHandler(t *testing.T) {
+	t.Run("Test Approve Command Is handled", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		webhookPayload := getIssueCommentMockPayload("approve-command")
+		input := &github.PullRequestReviewRequest{
+			Event: github.String("APPROVE"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/9/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := approveHandler(context.Background(), e, mClient)
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestIssueCommentHandler(t *testing.T) {
+	mClient, mux, serverURL, teardown := test.GetMockClient()
+	defer teardown()
+	yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+	assert.Equal(t, nil, err)
+	mux.HandleFunc(
+		"/repos/Spazzy757/paul/contents/",
+		func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET")
+			fmt.Fprint(w, `[{
+		            "type": "file",
+		            "name": "PAUL.yaml",
+		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
+		        }]`)
+		},
+	)
+	mux.HandleFunc("/download/PAUL.yaml", func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, r.Method, "GET")
+		fmt.Fprint(w, string(yamlFile))
+	})
+	ctx := context.Background()
+	t.Run("Test created Command", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("pr")
+		input := &github.IssueComment{Body: github.String("test")}
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/0/comments",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.IssueComment)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := IssueCommentHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test created Command", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("approve-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		input := &github.PullRequestReviewRequest{
+			Event: github.String("APPROVE"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/9/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := IssueCommentHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+
+}

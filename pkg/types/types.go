@@ -14,9 +14,10 @@ type PaulConfig struct {
 
 //PullRequests struct
 type PullRequests struct {
-	OpenMessage string `yaml:"open_message"`
-	CatsEnabled bool   `yaml:"cats_enabled"`
-	DogsEnabled bool   `yaml:"dogs_enabled"`
+	OpenMessage   string `yaml:"open_message"`
+	AllowApproval bool   `yaml:"allow_approval"`
+	CatsEnabled   bool   `yaml:"cats_enabled"`
+	DogsEnabled   bool   `yaml:"dogs_enabled"`
 }
 
 //PullRequests struct

@@ -17,3 +17,4 @@ pull_requests:
     sure to read the [CONTRIBUTING.md](https://github.com/Spazzy757/paul/blob/main/CONTRIBUTING.md)
   cats_enabled: true
   dogs_enabled: true
+  allow_approval: true

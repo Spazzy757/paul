@@ -67,6 +67,10 @@ func IssueCommentHandler(
 			if len(args) == 1 {
 				err = removeLabelHandler(ctx, event, client, args[0])
 			}
+		case cmd == "approve" &&
+			cfg.PullRequests.AllowApproval &&
+			event.Issue.IsPullRequest():
+			err = approveHandler(ctx, event, client)
 		default:
 			break
 		}
@@ -146,6 +150,25 @@ func removeLabelHandler(
 		is.Repo.GetName(),
 		is.Issue.GetNumber(),
 		label,
+	)
+	return err
+}
+
+//approveHandler approves Pull Requests
+func approveHandler(
+	ctx context.Context,
+	is *github.IssueCommentEvent,
+	client *github.Client,
+) error {
+	pullRequestReviewRequest := &github.PullRequestReviewRequest{
+		Event: github.String("APPROVE"),
+	}
+	_, _, err := client.PullRequests.CreateReview(
+		ctx,
+		*is.Repo.Owner.Login,
+		is.Repo.GetName(),
+		is.Issue.GetNumber(),
+		pullRequestReviewRequest,
 	)
 	return err
 }

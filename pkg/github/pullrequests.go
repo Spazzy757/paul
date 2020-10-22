@@ -38,7 +38,7 @@ func PullRequestHandler(
 	}
 	if branchDestroyerCheck(
 		&cfg.BranchDestroyer,
-		*event.Action,
+		event.GetAction(),
 		event.Repo.GetDefaultBranch(),
 		event.PullRequest.Head.GetRef(),
 	) {
@@ -49,6 +49,7 @@ func PullRequestHandler(
 			event.PullRequest.Head.GetRef(),
 		)
 	}
+	err = limitPRCheck(ctx, client, event, &cfg.PullRequests.LimitPullRequests)
 	return err
 
 }
@@ -67,6 +68,31 @@ func branchDestroyerCheck(
 		action == "completed" &&
 		destroyBranch != defaultBranch &&
 		!checkStringInList(cfg.ProtectedBranches, destroyBranch)
+}
+
+//limitPRCheck
+func limitPRCheck(
+	ctx context.Context,
+	client *github.Client,
+	event *github.PullRequestEvent,
+	limitCfg *types.LimitPullRequests,
+) error {
+	prs, err := getPullRequestListForUser(ctx, client, event)
+	if err != nil {
+		return err
+	}
+	if len(prs) > limitCfg.MaxNumber && limitCfg.MaxNumber != 0 {
+		if err = closePullRequest(ctx, client, event); err != nil {
+			return err
+		}
+		err = reviewComment(
+			ctx,
+			event.GetPullRequest(),
+			client,
+			"You seem to have opened more PR's than this Repo Allows",
+		)
+	}
+	return err
 }
 
 //reviewComment sends a review comment to a Pull Request
@@ -99,9 +125,48 @@ func branchDestroyer(
 ) error {
 	_, err := client.Git.DeleteRef(
 		ctx,
-		*pr.Base.User.Login,
+		pr.Base.User.GetLogin(),
 		pr.Base.Repo.GetName(),
 		fmt.Sprintf("refs/heads/%v", branch),
+	)
+	return err
+}
+
+// getPullRequestListForUser gets all the Pull Requests for the user
+func getPullRequestListForUser(
+	ctx context.Context,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) ([]*github.PullRequest, error) {
+	listOptions := &github.PullRequestListOptions{
+		Head: event.Sender.GetLogin(),
+		Base: event.PullRequest.Base.GetRef(),
+	}
+	prList, _, err := client.PullRequests.List(
+		ctx,
+		event.PullRequest.Base.User.GetLogin(),
+		event.PullRequest.Base.Repo.GetName(),
+		listOptions,
+	)
+	return prList, err
+}
+
+// getPullRequestListForUser gets all the Pull Requests for the user
+func closePullRequest(
+	ctx context.Context,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	pr := event.PullRequest
+	updatedPr := &github.PullRequest{
+		State: github.String("closed"),
+	}
+	_, _, err := client.PullRequests.Edit(
+		ctx,
+		pr.Base.User.GetLogin(),
+		pr.Base.Repo.GetName(),
+		pr.GetNumber(),
+		updatedPr,
 	)
 	return err
 }

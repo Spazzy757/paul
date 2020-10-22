@@ -151,6 +151,13 @@ func TestBranchDestroyerCheck(t *testing.T) {
 func TestPullRequestHandler(t *testing.T) {
 	mClient, mux, serverURL, teardown := test.GetMockClient()
 	defer teardown()
+	mux.HandleFunc(
+		"/repos/Spazzy757/paul/pulls",
+		func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET")
+			fmt.Fprint(w, `[{"number":1}]`)
+		},
+	)
 	yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
 	assert.Equal(t, nil, err)
 	mux.HandleFunc(
@@ -214,4 +221,139 @@ func TestPullRequestHandler(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 
+}
+
+func TestGetPullRequestListForUser(t *testing.T) {
+	t.Run("Test Get Pull Request returns a list and no err", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}, {"number":2}]`)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		list, err := getPullRequestListForUser(context.Background(), mClient, e)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, 2, len(list))
+	})
+	t.Run("Test Get Pull Request returns an err", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		_, err := getPullRequestListForUser(context.Background(), mClient, e)
+		assert.NotEqual(t, nil, err)
+	})
+}
+
+func TestLimitPRCheck(t *testing.T) {
+	cfg := &types.LimitPullRequests{
+		MaxNumber: 1,
+	}
+	t.Run("Test PRs exceed limit", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}, {"number":2}]`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "PATCH", r.Method)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "POST")
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := limitPRCheck(context.Background(), mClient, e, cfg)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test PRs under limit", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}]`)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := limitPRCheck(context.Background(), mClient, e, cfg)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test PRs limit with err", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := limitPRCheck(context.Background(), mClient, e, cfg)
+		assert.NotEqual(t, nil, err)
+	})
 }

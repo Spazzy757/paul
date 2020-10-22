@@ -23,8 +23,8 @@ func GetRouter() *mux.Router {
 //GithubWebHookHandler .
 func GithubWebHookHandler(w http.ResponseWriter, r *http.Request) {
 	// handle authentication
-	secret_key := helpers.GetEnv("SECRET_KEY", "")
-	payload, validationErr := github.ValidatePayload(r, []byte(secret_key))
+	secretKey := helpers.GetEnv("SECRET_KEY", "")
+	payload, validationErr := github.ValidatePayload(r, []byte(secretKey))
 	if handleError(w, validationErr) {
 		return
 	}
@@ -55,10 +55,12 @@ func handleError(w http.ResponseWriter, err error) bool {
 	return false
 }
 
+// Payload is used to get the installation ID from payload
 type Payload struct {
 	Installation Installation `json:"installation"`
 }
 
+// Installation is used to get the installation ID from the payload
 type Installation struct {
 	ID int64 `json:"id"`
 }

@@ -3,7 +3,6 @@ package github
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Spazzy757/paul/pkg/animals"
@@ -195,8 +194,6 @@ func createIssueComment(
 
 // checkStringInList checks if string is in a list of strings
 func checkStringInList(stringList []string, query string) bool {
-	log.Println(stringList)
-	log.Println(query)
 	for _, i := range stringList {
 		if i == query {
 			return true

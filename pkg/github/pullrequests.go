@@ -47,7 +47,9 @@ func firstPRCheck(
 	client *github.Client,
 	event *github.PullRequestEvent,
 ) error {
-	if cfg.PullRequests.OpenMessage != "" && event.GetAction() == "opened" {
+	if cfg.PullRequests.OpenMessage != "" &&
+		event.GetAction() == "opened" &&
+		!checkStringInList(cfg.Maintainers, *event.Sender.Login) {
 		err := reviewComment(
 			ctx,
 			event.GetPullRequest(),

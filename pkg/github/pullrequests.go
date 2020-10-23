@@ -28,69 +28,83 @@ func PullRequestHandler(
 		return configErr
 	}
 	var err error
-	if firstPRCheck(cfg.PullRequests.OpenMessage, *event.Action) {
-		err = reviewComment(
+	err = branchDestroyerCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
+	err = firstPRCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
+	err = limitPRCheck(ctx, cfg, client, event)
+	return err
+}
+
+//firstPRCheck checks if a PR has just been opened and
+func firstPRCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.PullRequests.OpenMessage != "" && event.GetAction() == "opened" {
+		err := reviewComment(
 			ctx,
 			event.GetPullRequest(),
 			client,
 			cfg.PullRequests.OpenMessage,
 		)
+		return err
 	}
-	if branchDestroyerCheck(
-		&cfg.BranchDestroyer,
-		event.GetAction(),
-		event.Repo.GetDefaultBranch(),
-		event.PullRequest.Head.GetRef(),
-	) {
-		err = branchDestroyer(
+	return nil
+}
+
+//branchDestroyerCheck checks if branch can be destroyed
+func branchDestroyerCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.BranchDestroyer.Enabled &&
+		event.GetAction() == "completed" &&
+		event.PullRequest.Head.GetRef() != event.Repo.GetDefaultBranch() &&
+		!checkStringInList(
+			cfg.BranchDestroyer.ProtectedBranches,
+			event.PullRequest.Head.GetRef()) {
+		err := branchDestroyer(
 			ctx,
 			event.GetPullRequest(),
 			client,
 			event.PullRequest.Head.GetRef(),
 		)
+		return err
 	}
-	err = limitPRCheck(ctx, client, event, &cfg.PullRequests.LimitPullRequests)
-	return err
-
-}
-
-//firstPRCheck checks if a PR has just been opened and
-func firstPRCheck(message, action string) bool {
-	return message != "" && action == "opened"
-}
-
-//branchDestroyerCheck checks if branch can be destroyed
-func branchDestroyerCheck(
-	cfg *types.BranchDestroyer,
-	action, defaultBranch, destroyBranch string,
-) bool {
-	return cfg.Enabled &&
-		action == "completed" &&
-		destroyBranch != defaultBranch &&
-		!checkStringInList(cfg.ProtectedBranches, destroyBranch)
+	return nil
 }
 
 //limitPRCheck
 func limitPRCheck(
 	ctx context.Context,
+	cfg types.PaulConfig,
 	client *github.Client,
 	event *github.PullRequestEvent,
-	limitCfg *types.LimitPullRequests,
 ) error {
 	prs, err := getPullRequestListForUser(ctx, client, event)
 	if err != nil {
 		return err
 	}
-	if len(prs) > limitCfg.MaxNumber && limitCfg.MaxNumber != 0 {
-		if err = closePullRequest(ctx, client, event); err != nil {
-			return err
-		}
-		err = reviewComment(
+	maxNumber := cfg.PullRequests.LimitPullRequests.MaxNumber
+	if len(prs) > maxNumber && maxNumber != 0 {
+		if err = reviewComment(
 			ctx,
 			event.GetPullRequest(),
 			client,
 			"You seem to have opened more PR's than this Repo Allows",
-		)
+		); err != nil {
+			return err
+		}
+		err = closePullRequest(ctx, client, event)
 	}
 	return err
 }

@@ -52,17 +52,59 @@ func TestCreateReview(t *testing.T) {
 }
 
 func TestFirstPRCheck(t *testing.T) {
+	mClient, mux, _, teardown := test.GetMockClient()
+	webhookPayload := test.GetMockPayload("opened-pr")
+	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+	req.Header.Set("X-GitHub-Event", "pull_request")
+	event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+	e := event.(*github.PullRequestEvent)
+
+	defer teardown()
 	t.Run("Test First PR - no message", func(t *testing.T) {
-		firstPR := firstPRCheck("", "opened")
-		assert.Equal(t, false, firstPR)
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				OpenMessage: "",
+			},
+		}
+		err := firstPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test First PR - should be true", func(t *testing.T) {
-		firstPR := firstPRCheck("Test", "opened")
-		assert.Equal(t, true, firstPR)
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				OpenMessage: "test",
+			},
+		}
+		input := &github.PullRequestReviewRequest{
+			Body:  github.String("test"),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		err := firstPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test First PR - should Be false", func(t *testing.T) {
-		firstPR := firstPRCheck("Test", "closed")
-		assert.Equal(t, false, firstPR)
+		mergedPayload := test.GetMockPayload("merged-pr")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(mergedPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+		event, _ := github.ParseWebHook(github.WebHookType(req), mergedPayload)
+		e := event.(*github.PullRequestEvent)
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				OpenMessage: "test",
+			},
+		}
+		err := firstPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 }
 
@@ -91,59 +133,59 @@ func TestBranchDestroyer(t *testing.T) {
 }
 
 func TestBranchDestroyerCheck(t *testing.T) {
-	protected := []string{"main", "master"}
-	cfg := &types.BranchDestroyer{
-		Enabled:           true,
-		ProtectedBranches: protected,
-	}
-	t.Run("Test Branch Destroyer - not enabled", func(t *testing.T) {
-		disabledCfg := &types.BranchDestroyer{
-			Enabled:           false,
+	protected := []string{"master"}
+	mClient, mux, _, teardown := test.GetMockClient()
+	defer teardown()
+	cfg := types.PaulConfig{
+		BranchDestroyer: types.BranchDestroyer{
+			Enabled:           true,
 			ProtectedBranches: protected,
-		}
-		destroyBranch := branchDestroyerCheck(
-			disabledCfg,
-			"completed",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, false, destroyBranch)
+		},
+	}
+	disabledCfg := types.PaulConfig{
+		BranchDestroyer: types.BranchDestroyer{
+			Enabled: false,
+		},
+	}
+	webhookPayload := test.GetMockPayload("merged-pr")
+
+	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+	req.Header.Set("X-GitHub-Event", "pull_request")
+
+	event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+	e := event.(*github.PullRequestEvent)
+	ctx := context.Background()
+	t.Run("Test Branch Destroyer - not enabled", func(t *testing.T) {
+		err := branchDestroyerCheck(ctx, disabledCfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - not completed", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"opened",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, false, destroyBranch)
+		e.Action = github.String("opened")
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.Action = github.String("completed")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - default branch", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"main",
-		)
-		assert.Equal(t, false, destroyBranch)
+		e.PullRequest.Head.Ref = github.String("main")
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.PullRequest.Head.Ref = github.String("feature-added-webserver")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - protected branch", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"master",
-		)
-		assert.Equal(t, false, destroyBranch)
+		e.PullRequest.Head.Ref = github.String("master")
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.PullRequest.Head.Ref = github.String("feature-added-webserver")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - valid", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"feature",
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/git/refs/heads/feature-added-webserver",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
 		)
-		assert.Equal(t, true, destroyBranch)
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 
 }
@@ -273,8 +315,12 @@ func TestGetPullRequestListForUser(t *testing.T) {
 }
 
 func TestLimitPRCheck(t *testing.T) {
-	cfg := &types.LimitPullRequests{
-		MaxNumber: 1,
+	cfg := types.PaulConfig{
+		PullRequests: types.PullRequests{
+			LimitPullRequests: types.LimitPullRequests{
+				MaxNumber: 1,
+			},
+		},
 	}
 	t.Run("Test PRs exceed limit", func(t *testing.T) {
 		mClient, mux, _, teardown := test.GetMockClient()
@@ -308,7 +354,7 @@ func TestLimitPRCheck(t *testing.T) {
 
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := limitPRCheck(context.Background(), mClient, e, cfg)
+		err := limitPRCheck(context.Background(), cfg, mClient, e)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("Test PRs under limit", func(t *testing.T) {
@@ -330,7 +376,7 @@ func TestLimitPRCheck(t *testing.T) {
 
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := limitPRCheck(context.Background(), mClient, e, cfg)
+		err := limitPRCheck(context.Background(), cfg, mClient, e)
 		assert.Equal(t, nil, err)
 	})
 	t.Run("Test PRs limit with err", func(t *testing.T) {
@@ -353,7 +399,7 @@ func TestLimitPRCheck(t *testing.T) {
 
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.PullRequestEvent)
-		err := limitPRCheck(context.Background(), mClient, e, cfg)
+		err := limitPRCheck(context.Background(), cfg, mClient, e)
 		assert.NotEqual(t, nil, err)
 	})
 }

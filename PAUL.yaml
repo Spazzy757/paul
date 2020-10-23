@@ -10,6 +10,8 @@ branch_destroyer:
   protected_branches:
   - main
 pull_requests:
+  limit_pull_requests:
+    max_number: 3
   open_message: |
     Greetings!
     Thank you for contributing to my source code,

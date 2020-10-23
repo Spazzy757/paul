@@ -1,6 +1,8 @@
 package test
 
 import (
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -42,4 +44,11 @@ func GetMockClient() (
 	client.UploadURL = url
 
 	return client, mux, server.URL, server.Close
+}
+
+// GetMockPayload loads one of the json files into a []byte
+func GetMockPayload(payloadType string) []byte {
+	fileLocation := fmt.Sprintf("../../mocks/%v.json", payloadType)
+	file, _ := ioutil.ReadFile(fileLocation)
+	return []byte(file)
 }

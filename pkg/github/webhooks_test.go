@@ -67,6 +67,13 @@ func TestIncomingWebhook(t *testing.T) {
 		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
 		assert.Equal(t, nil, err)
 		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}]`)
+			},
+		)
+		mux.HandleFunc(
 			"/repos/Spazzy757/paul/contents/",
 			func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, r.Method, "GET")

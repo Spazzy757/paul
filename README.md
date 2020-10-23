@@ -17,17 +17,36 @@ If you would like to install Paul, you can find him in the [Github Apps](https:/
 Paul is configured using the `PAUL.yaml` in the root of your default branch:
 
 ```yaml
-# List of maintainers of the repo
 maintainers:
 - Spazzy757
+# Allows for the /label and /remove-label commands
+# usage: /label enhancement
+# usage: /remove-label enhancement
+# Will only add existing labels
+# Can be used on PR's or Issues
+labels: true
+# Settings for branch destroyer
+# branch destroyer will not delete your default branch
+branch_destroyer:
+  enabled: true
+  # set other "protected" branches here
+  protected_branches:
+  - main
 pull_requests:
-  # This is the message that will displayed when a user opens a pull request
+  # This will limit the amount of PR's a single contributer can have
+  # Limits work in progress
+  limit_pull_requests:
+    max_number: 3
+     # This is the message that will displayed when a user opens a pull request
   open_message: |
-    Greetings! Thanks for opening a PR
+      Greetings! Thanks for opening a PR
   # Enables the /cat command
   cats_enabled: true
   # enables the /dog command
   dogs_enabled: true
+  # Allows any maintainer in the list to run /approve
+  # Paul will approve the PR (Does not merge it)
+  allow_approval: true
 ```
 
 ## Contributing

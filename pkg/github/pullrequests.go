@@ -69,8 +69,9 @@ func branchDestroyerCheck(
 	event *github.PullRequestEvent,
 ) error {
 	if cfg.BranchDestroyer.Enabled &&
-		event.GetAction() == "completed" &&
+		event.GetAction() == "closed" &&
 		event.PullRequest.Head.GetRef() != event.Repo.GetDefaultBranch() &&
+		event.PullRequest.GetMerged() &&
 		!checkStringInList(
 			cfg.BranchDestroyer.ProtectedBranches,
 			event.PullRequest.Head.GetRef()) {

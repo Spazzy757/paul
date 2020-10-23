@@ -177,6 +177,13 @@ func TestBranchDestroyerCheck(t *testing.T) {
 		e.PullRequest.Head.Ref = github.String("feature-added-webserver")
 		assert.Equal(t, nil, err)
 	})
+	t.Run("Test Branch Destroyer - not merged", func(t *testing.T) {
+		e.PullRequest.Merged = github.Bool(false)
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.PullRequest.Merged = github.Bool(true)
+		assert.Equal(t, nil, err)
+	})
+
 	t.Run("Test Branch Destroyer - valid", func(t *testing.T) {
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/git/refs/heads/feature-added-webserver",

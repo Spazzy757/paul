@@ -12,6 +12,22 @@ If you would like to install Paul, you can find him in the [Github Apps](https:/
 
 **Please Note** Paul is currently in Alpha. Backwards incompatible changes can occur. There also might be times where you will need to update permissions based on newly released features.
 
+## Usage
+
+### PR's and Issues
+
+Commands:
+* `/approve`: Paul will approve a PR (conditions: must be a maintainer)
+* `/label <some-label>`: Paul will label the issue/PR with that label (conditions: must be maintainer and label must exists)
+* `/remove-label <some-label>`: Paul will remove a label from a issue/PR (conditions: must be maintainer and label must exists)
+* `/dog`: Paul will add and image of a dog
+* `/cat`: Paul will add an Image of a cat 
+
+Other Functions:
+* Branch Destroyer: Will delete a branch when it has been merged (conditions: won't delete default branch or any protected branch, see configuration)
+* New PR Message: Paul will post a review message when a new PR is created (condition: wont post message if maintainer opens PR)
+* Pull Request Limiter: Paul will close PR's for a user if they have more than x amount of pull requests already open (see configuration). This will limit the amount of **Work In Progress**
+
 ## Configuration
 
 Paul is configured using the `PAUL.yaml` in the root of your default branch:

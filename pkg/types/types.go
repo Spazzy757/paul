@@ -26,7 +26,7 @@ type LimitPullRequests struct {
 	MaxNumber int `yaml:"max_number,omitempty"`
 }
 
-//PullRequests struct
+//BranchDestroyer struct
 type BranchDestroyer struct {
 	Enabled           bool     `yaml:"enabled,omitempty"`
 	ProtectedBranches []string `yaml:"protected_branches,omitempty"`

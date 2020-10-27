@@ -306,7 +306,14 @@ func TestMergeHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/7",
 			func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, r.Method, "GET")
-				mockPr := `{"number":7, "pull_request": {"mergeable": true}}`
+				mockPr := `{
+                    "number":7,
+                    "mergeable": true,
+                    "base": {
+                        "repo": {"name":"paul"},
+                        "user": {"login":"Spazzy757"}
+                    }
+                }`
 				fmt.Fprint(w, mockPr)
 			},
 		)
@@ -464,7 +471,14 @@ func TestIssueCommentHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/7",
 			func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, r.Method, "GET")
-				mockPr := `{"number":7, "pull_request": {"mergeable": true}}`
+				mockPr := `{
+                    "number":7,
+                    "mergeable": true,
+                    "base": {
+                        "repo": {"name":"paul"},
+                        "user": {"login":"Spazzy757"}
+                    }
+                }`
 				fmt.Fprint(w, mockPr)
 			},
 		)

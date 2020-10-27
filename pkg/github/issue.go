@@ -90,7 +90,6 @@ func mergeHandler(
 	event *github.IssueCommentEvent,
 	client *github.Client,
 ) error {
-	var err error
 	if event.Issue.IsPullRequest() &&
 		checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) {
 		pr, _, err := client.PullRequests.Get(
@@ -104,13 +103,13 @@ func mergeHandler(
 		}
 		if pr.GetMergeable() {
 			err = mergePullRequest(ctx, client, pr)
-		}
-		if !pr.GetMergeable() {
+		} else {
 			message := "This Pull Request Can not be merge currently"
 			err = createIssueComment(ctx, event, client, message)
 		}
+		return err
 	}
-	return err
+	return nil
 }
 
 // handleCats is the handler for the /cat command

@@ -11,8 +11,7 @@ import (
 
 const configFile = "PAUL.yaml"
 
-// TODO: Move This Logic into configs
-//getPaulConig returns configuration for paul
+//GetPaulConig returns configuration for paul
 func GetPaulConfig(
 	ctx context.Context,
 	owner, repo *string,

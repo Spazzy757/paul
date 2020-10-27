@@ -54,25 +54,16 @@ func IssueCommentHandler(
 			animalClient := animals.NewDogClient()
 			err = dogsHandler(ctx, event, client, animalClient)
 		// Case /label command
-		case cmd == "label" &&
-			cfg.Labels &&
-			checkStringInList(cfg.Maintainers, *event.Sender.Login):
+		case cmd == "label":
 			// handle the labels
-			err = labelHandler(ctx, event, client, args)
+			err = labelHandler(ctx, &cfg, event, client, args)
 		// Case /remove-label command
-		case cmd == "remove-label" &&
-			cfg.Labels &&
-			checkStringInList(cfg.Maintainers, *event.Sender.Login):
-			// handle the remove labels,
-			// if more than one arg is passed through, don't do anything
-			if len(args) == 1 {
-				err = removeLabelHandler(ctx, event, client, args[0])
-			}
-		case cmd == "approve" &&
-			cfg.PullRequests.AllowApproval &&
-			checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) &&
-			event.Issue.IsPullRequest():
-			err = approveHandler(ctx, event, client)
+		case cmd == "remove-label":
+			err = removeLabelHandler(ctx, &cfg, event, client, args)
+		// Case /approve command
+		case cmd == "approve":
+			err = approveHandler(ctx, &cfg, event, client)
+		// Case /merge command
 		case cmd == "merge":
 			err = mergeHandler(ctx, &cfg, event, client)
 		default:
@@ -157,53 +148,72 @@ func dogsHandler(
 //labelHandler handles the /label command
 func labelHandler(
 	ctx context.Context,
-	is *github.IssueCommentEvent,
+	cfg *types.PaulConfig,
+	event *github.IssueCommentEvent,
 	client *github.Client,
 	labels []string,
 ) error {
-	_, _, err := client.Issues.AddLabelsToIssue(
-		ctx,
-		*is.Repo.Owner.Login,
-		is.Repo.GetName(),
-		is.Issue.GetNumber(),
-		labels,
-	)
+	var err error
+	if cfg.Labels &&
+		checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) {
+		_, _, err = client.Issues.AddLabelsToIssue(
+			ctx,
+			event.Repo.Owner.GetLogin(),
+			event.Repo.GetName(),
+			event.Issue.GetNumber(),
+			labels,
+		)
+	}
 	return err
 }
 
 //removeLabelHandler handles the /removelabel command
 func removeLabelHandler(
 	ctx context.Context,
-	is *github.IssueCommentEvent,
+	cfg *types.PaulConfig,
+	event *github.IssueCommentEvent,
 	client *github.Client,
-	label string,
+	labels []string,
 ) error {
-	_, err := client.Issues.RemoveLabelForIssue(
-		ctx,
-		*is.Repo.Owner.Login,
-		is.Repo.GetName(),
-		is.Issue.GetNumber(),
-		label,
-	)
+	var err error
+	if cfg.Labels &&
+		// handle the remove labels,
+		// if more than one arg is passed through, don't do anything
+		len(labels) == 1 &&
+		checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) {
+		_, err = client.Issues.RemoveLabelForIssue(
+			ctx,
+			event.Repo.Owner.GetLogin(),
+			event.Repo.GetName(),
+			event.Issue.GetNumber(),
+			labels[0],
+		)
+	}
 	return err
 }
 
 //approveHandler approves Pull Requests
 func approveHandler(
 	ctx context.Context,
-	is *github.IssueCommentEvent,
+	cfg *types.PaulConfig,
+	event *github.IssueCommentEvent,
 	client *github.Client,
 ) error {
-	pullRequestReviewRequest := &github.PullRequestReviewRequest{
-		Event: github.String("APPROVE"),
+	var err error
+	if cfg.PullRequests.AllowApproval &&
+		checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) &&
+		event.Issue.IsPullRequest() {
+		pullRequestReviewRequest := &github.PullRequestReviewRequest{
+			Event: github.String("APPROVE"),
+		}
+		_, _, err = client.PullRequests.CreateReview(
+			ctx,
+			event.Repo.Owner.GetLogin(),
+			event.Repo.GetName(),
+			event.Issue.GetNumber(),
+			pullRequestReviewRequest,
+		)
 	}
-	_, _, err := client.PullRequests.CreateReview(
-		ctx,
-		*is.Repo.Owner.Login,
-		is.Repo.GetName(),
-		is.Issue.GetNumber(),
-		pullRequestReviewRequest,
-	)
 	return err
 }
 

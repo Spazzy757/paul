@@ -12,7 +12,7 @@ const (
 	dogUrl  = "https://api.thedogapi.com/v1/images/search"
 )
 
-//Cat defines the struct value for the animal
+//Animal defines the struct value for the animal
 type Animal struct {
 	Url string `json:"url"`
 }

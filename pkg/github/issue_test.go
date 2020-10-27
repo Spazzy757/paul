@@ -153,6 +153,12 @@ func TestHandleLabels(t *testing.T) {
 	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
 		mClient, mux, _, teardown := test.GetMockClient()
 		defer teardown()
+		cfg := &types.PaulConfig{
+			Maintainers: []string{
+				"Spazzy757",
+			},
+			Labels: true,
+		}
 
 		input := []string{"test"}
 		mux.HandleFunc(
@@ -171,7 +177,7 @@ func TestHandleLabels(t *testing.T) {
 
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
-		err := labelHandler(context.Background(), e, mClient, input)
+		err := labelHandler(context.Background(), cfg, e, mClient, input)
 		assert.Equal(t, nil, err)
 	})
 }
@@ -180,6 +186,11 @@ func TestHandleRemoveLabels(t *testing.T) {
 	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
 		mClient, mux, _, teardown := test.GetMockClient()
 		defer teardown()
+		cfg := &types.PaulConfig{
+			Maintainers: []string{
+				"Spazzy757",
+			},
+		}
 
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/issues/9/labels/test",
@@ -195,7 +206,7 @@ func TestHandleRemoveLabels(t *testing.T) {
 
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
-		err := removeLabelHandler(context.Background(), e, mClient, "test")
+		err := removeLabelHandler(context.Background(), cfg, e, mClient, []string{"test"})
 		assert.Equal(t, nil, err)
 	})
 }
@@ -238,6 +249,11 @@ func TestApproveHandler(t *testing.T) {
 	t.Run("Test Approve Command Is handled", func(t *testing.T) {
 		mClient, mux, _, teardown := test.GetMockClient()
 		defer teardown()
+		cfg := &types.PaulConfig{
+			Maintainers: []string{
+				"Spazzy757",
+			},
+		}
 
 		webhookPayload := getIssueCommentMockPayload("approve-command")
 		input := &github.PullRequestReviewRequest{
@@ -259,7 +275,7 @@ func TestApproveHandler(t *testing.T) {
 
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
-		err := approveHandler(context.Background(), e, mClient)
+		err := approveHandler(context.Background(), cfg, e, mClient)
 		assert.Equal(t, nil, err)
 	})
 }

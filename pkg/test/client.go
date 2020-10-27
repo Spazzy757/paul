@@ -16,6 +16,7 @@ const (
 	baseURLPath = "/api-v3"
 )
 
+//GetMockClient Returns a Mock Client in order to mock out calls to Githubs API
 func GetMockClient() (
 	client *github.Client,
 	mux *http.ServeMux,

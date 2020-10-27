@@ -17,7 +17,8 @@ If you would like to install Paul, you can find him in the [Github Apps](https:/
 ### PR's and Issues
 
 Commands:
-* `/approve`: Paul will approve a PR (conditions: must be a maintainer)
+* `/approve`: Paul will approve a Pull Request (conditions: must be a maintainer)
+* `/merge`: Pauyl will merge the Pull Request (conditions: must be a maintainer)
 * `/label <some-label>`: Paul will label the issue/PR with that label (conditions: must be maintainer and label must exists)
 * `/remove-label <some-label>`: Paul will remove a label from a issue/PR (conditions: must be maintainer and label must exists)
 * `/dog`: Paul will add and image of a dog

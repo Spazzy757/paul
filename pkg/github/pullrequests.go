@@ -187,3 +187,23 @@ func closePullRequest(
 	)
 	return err
 }
+
+// mergePullRequest will merge a pull request with the rebase feature
+func mergePullRequest(
+	ctx context.Context,
+	client *github.Client,
+	pr *github.PullRequest,
+) error {
+	options := &github.PullRequestOptions{
+		MergeMethod: "merge",
+	}
+	_, _, err := client.PullRequests.Merge(
+		ctx,
+		pr.Base.User.GetLogin(),
+		pr.Base.Repo.GetName(),
+		pr.GetNumber(),
+		"",
+		options,
+	)
+	return err
+}

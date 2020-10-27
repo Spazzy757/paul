@@ -410,3 +410,55 @@ func TestLimitPRCheck(t *testing.T) {
 		assert.NotEqual(t, nil, err)
 	})
 }
+
+func TestMergePullRequest(t *testing.T) {
+	t.Run("Test merge pull request", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				fmt.Fprint(w, `
+			{
+			  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			  "merged": true,
+			  "message": "Pull Request successfully merged"
+			}`)
+			})
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := mergePullRequest(context.Background(), mClient, e.PullRequest)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test merge pull request fails", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			})
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := mergePullRequest(context.Background(), mClient, e.PullRequest)
+		assert.NotEqual(t, nil, err)
+	})
+
+}

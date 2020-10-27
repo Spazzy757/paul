@@ -8,7 +8,7 @@ A huge shout out to inspiration [Derek](https://github.com/alexellis/derek) crea
 
 ## Setup
 
-If you would like to install Paul, you can find him in the [Github Apps](https://github.com/apps/paulthealien). 
+If you would like to install Paul, you can find him in the [Github Apps](https://github.com/apps/paul-the-alien). 
 
 **Please Note** Paul is currently in Alpha. Backwards incompatible changes can occur. There also might be times where you will need to update permissions based on newly released features.
 

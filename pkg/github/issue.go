@@ -7,6 +7,7 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/Spazzy757/paul/pkg/config"
+	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
 )
 
@@ -69,9 +70,11 @@ func IssueCommentHandler(
 			}
 		case cmd == "approve" &&
 			cfg.PullRequests.AllowApproval &&
-			checkStringInList(cfg.Maintainers, *event.Sender.Login) &&
+			checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) &&
 			event.Issue.IsPullRequest():
 			err = approveHandler(ctx, event, client)
+		case cmd == "merge":
+			err = mergeHandler(ctx, &cfg, event, client)
 		default:
 			break
 		}
@@ -87,6 +90,36 @@ func getCommand(comment string) (string, []string) {
 	}
 	commands := strings.Split(comment[1:], " ")
 	return commands[0], commands[1:]
+}
+
+// handler for the /merge command
+func mergeHandler(
+	ctx context.Context,
+	cfg *types.PaulConfig,
+	event *github.IssueCommentEvent,
+	client *github.Client,
+) error {
+	var err error
+	if event.Issue.IsPullRequest() &&
+		checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) {
+		pr, _, err := client.PullRequests.Get(
+			ctx,
+			event.Repo.Owner.GetLogin(),
+			event.Repo.GetName(),
+			event.Issue.GetNumber(),
+		)
+		if err != nil {
+			return err
+		}
+		if pr.GetMergeable() {
+			err = mergePullRequest(ctx, client, pr)
+		}
+		if !pr.GetMergeable() {
+			message := "This Pull Request Can not be merge currently"
+			err = createIssueComment(ctx, event, client, message)
+		}
+	}
+	return err
 }
 
 // handleCats is the handler for the /cat command

@@ -12,6 +12,7 @@ import (
 	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/Spazzy757/paul/pkg/test"
+	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 )
@@ -263,6 +264,75 @@ func TestApproveHandler(t *testing.T) {
 	})
 }
 
+func TestMergeHandler(t *testing.T) {
+	mClient, mux, _, teardown := test.GetMockClient()
+	defer teardown()
+	cfg := &types.PaulConfig{
+		Maintainers: []string{
+			"Spazzy757",
+		},
+	}
+	t.Run("Test Merge Pull Request", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("merge-command")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/7/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				fmt.Fprint(w, `
+			{
+			  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			  "merged": true,
+			  "message": "Pull Request successfully merged"
+			}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/7",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				mockPr := `{"number":7, "pull_request": {"mergeable": true}}`
+				fmt.Fprint(w, mockPr)
+			},
+		)
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		e.Issue.Number = github.Int(7)
+		err := mergeHandler(context.Background(), cfg, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Merge Pull Request Cant Merge", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("merge-command")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/9",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `{"number":9}`)
+			})
+		input := &github.IssueComment{
+			Body: github.String("This Pull Request Can not be merge currently"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/comments",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.IssueComment)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := mergeHandler(context.Background(), cfg, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+}
+
 func TestIssueCommentHandler(t *testing.T) {
 	mClient, mux, serverURL, teardown := test.GetMockClient()
 	defer teardown()
@@ -357,6 +427,37 @@ func TestIssueCommentHandler(t *testing.T) {
 		)
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
+		err := IssueCommentHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Merge Pull Request", func(t *testing.T) {
+		webhookPayload := getIssueCommentMockPayload("merge-command")
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/7/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				fmt.Fprint(w, `
+			{
+			  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			  "merged": true,
+			  "message": "Pull Request successfully merged"
+			}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/7",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				mockPr := `{"number":7, "pull_request": {"mergeable": true}}`
+				fmt.Fprint(w, mockPr)
+			},
+		)
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		e.Issue.Number = github.Int(7)
 		err := IssueCommentHandler(ctx, e, mClient)
 		assert.Equal(t, nil, err)
 	})

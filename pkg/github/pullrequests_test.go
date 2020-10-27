@@ -52,17 +52,59 @@ func TestCreateReview(t *testing.T) {
 }
 
 func TestFirstPRCheck(t *testing.T) {
+	mClient, mux, _, teardown := test.GetMockClient()
+	webhookPayload := test.GetMockPayload("opened-pr")
+	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+	req.Header.Set("X-GitHub-Event", "pull_request")
+	event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+	e := event.(*github.PullRequestEvent)
+
+	defer teardown()
 	t.Run("Test First PR - no message", func(t *testing.T) {
-		firstPR := firstPRCheck("", "opened")
-		assert.Equal(t, false, firstPR)
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				OpenMessage: "",
+			},
+		}
+		err := firstPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test First PR - should be true", func(t *testing.T) {
-		firstPR := firstPRCheck("Test", "opened")
-		assert.Equal(t, true, firstPR)
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				OpenMessage: "test",
+			},
+		}
+		input := &github.PullRequestReviewRequest{
+			Body:  github.String("test"),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		err := firstPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test First PR - should Be false", func(t *testing.T) {
-		firstPR := firstPRCheck("Test", "closed")
-		assert.Equal(t, false, firstPR)
+		mergedPayload := test.GetMockPayload("merged-pr")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(mergedPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+		event, _ := github.ParseWebHook(github.WebHookType(req), mergedPayload)
+		e := event.(*github.PullRequestEvent)
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				OpenMessage: "test",
+			},
+		}
+		err := firstPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 }
 
@@ -91,59 +133,66 @@ func TestBranchDestroyer(t *testing.T) {
 }
 
 func TestBranchDestroyerCheck(t *testing.T) {
-	protected := []string{"main", "master"}
-	cfg := &types.BranchDestroyer{
-		Enabled:           true,
-		ProtectedBranches: protected,
-	}
-	t.Run("Test Branch Destroyer - not enabled", func(t *testing.T) {
-		disabledCfg := &types.BranchDestroyer{
-			Enabled:           false,
+	protected := []string{"master"}
+	mClient, mux, _, teardown := test.GetMockClient()
+	defer teardown()
+	cfg := types.PaulConfig{
+		BranchDestroyer: types.BranchDestroyer{
+			Enabled:           true,
 			ProtectedBranches: protected,
-		}
-		destroyBranch := branchDestroyerCheck(
-			disabledCfg,
-			"completed",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, false, destroyBranch)
+		},
+	}
+	disabledCfg := types.PaulConfig{
+		BranchDestroyer: types.BranchDestroyer{
+			Enabled: false,
+		},
+	}
+	webhookPayload := test.GetMockPayload("merged-pr")
+
+	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+	req.Header.Set("X-GitHub-Event", "pull_request")
+
+	event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+	e := event.(*github.PullRequestEvent)
+	ctx := context.Background()
+	t.Run("Test Branch Destroyer - not enabled", func(t *testing.T) {
+		err := branchDestroyerCheck(ctx, disabledCfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - not completed", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"opened",
-			"main",
-			"feature",
-		)
-		assert.Equal(t, false, destroyBranch)
+		e.Action = github.String("opened")
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.Action = github.String("completed")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - default branch", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"main",
-		)
-		assert.Equal(t, false, destroyBranch)
+		e.PullRequest.Head.Ref = github.String("main")
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.PullRequest.Head.Ref = github.String("feature-added-webserver")
+		assert.Equal(t, nil, err)
 	})
 	t.Run("Test Branch Destroyer - protected branch", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"master",
-		)
-		assert.Equal(t, false, destroyBranch)
+		e.PullRequest.Head.Ref = github.String("master")
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.PullRequest.Head.Ref = github.String("feature-added-webserver")
+		assert.Equal(t, nil, err)
 	})
+	t.Run("Test Branch Destroyer - not merged", func(t *testing.T) {
+		e.PullRequest.Merged = github.Bool(false)
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		e.PullRequest.Merged = github.Bool(true)
+		assert.Equal(t, nil, err)
+	})
+
 	t.Run("Test Branch Destroyer - valid", func(t *testing.T) {
-		destroyBranch := branchDestroyerCheck(
-			cfg,
-			"completed",
-			"main",
-			"feature",
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/git/refs/heads/feature-added-webserver",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "DELETE")
+			},
 		)
-		assert.Equal(t, true, destroyBranch)
+		err := branchDestroyerCheck(ctx, cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 
 }
@@ -151,6 +200,13 @@ func TestBranchDestroyerCheck(t *testing.T) {
 func TestPullRequestHandler(t *testing.T) {
 	mClient, mux, serverURL, teardown := test.GetMockClient()
 	defer teardown()
+	mux.HandleFunc(
+		"/repos/Spazzy757/paul/pulls",
+		func(w http.ResponseWriter, r *http.Request) {
+			assert.Equal(t, r.Method, "GET")
+			fmt.Fprint(w, `[{"number":1}]`)
+		},
+	)
 	yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
 	assert.Equal(t, nil, err)
 	mux.HandleFunc(
@@ -212,6 +268,197 @@ func TestPullRequestHandler(t *testing.T) {
 		e := event.(*github.PullRequestEvent)
 		err := PullRequestHandler(ctx, e, mClient)
 		assert.Equal(t, nil, err)
+	})
+
+}
+
+func TestGetPullRequestListForUser(t *testing.T) {
+	t.Run("Test Get Pull Request returns a list and no err", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}, {"number":2}]`)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		list, err := getPullRequestListForUser(context.Background(), mClient, e)
+		assert.Equal(t, nil, err)
+		assert.Equal(t, 2, len(list))
+	})
+	t.Run("Test Get Pull Request returns an err", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		_, err := getPullRequestListForUser(context.Background(), mClient, e)
+		assert.NotEqual(t, nil, err)
+	})
+}
+
+func TestLimitPRCheck(t *testing.T) {
+	cfg := types.PaulConfig{
+		PullRequests: types.PullRequests{
+			LimitPullRequests: types.LimitPullRequests{
+				MaxNumber: 1,
+			},
+		},
+	}
+	t.Run("Test PRs exceed limit", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}, {"number":2}]`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "PATCH", r.Method)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "POST")
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := limitPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test PRs under limit", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{"number":1}]`)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := limitPRCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test PRs limit with err", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			},
+		)
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := limitPRCheck(context.Background(), cfg, mClient, e)
+		assert.NotEqual(t, nil, err)
+	})
+}
+
+func TestMergePullRequest(t *testing.T) {
+	t.Run("Test merge pull request", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				fmt.Fprint(w, `
+			{
+			  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			  "merged": true,
+			  "message": "Pull Request successfully merged"
+			}`)
+			})
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := mergePullRequest(context.Background(), mClient, e.PullRequest)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test merge pull request fails", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			})
+
+		webhookPayload := getMockPayload()
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := mergePullRequest(context.Background(), mClient, e.PullRequest)
+		assert.NotEqual(t, nil, err)
 	})
 
 }

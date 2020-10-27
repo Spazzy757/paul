@@ -28,45 +28,88 @@ func PullRequestHandler(
 		return configErr
 	}
 	var err error
-	if firstPRCheck(cfg.PullRequests.OpenMessage, *event.Action) {
-		err = reviewComment(
+	err = branchDestroyerCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
+	err = firstPRCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
+	err = limitPRCheck(ctx, cfg, client, event)
+	return err
+}
+
+//firstPRCheck checks if a PR has just been opened and
+func firstPRCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.PullRequests.OpenMessage != "" &&
+		event.GetAction() == "opened" &&
+		!checkStringInList(cfg.Maintainers, *event.Sender.Login) {
+		err := reviewComment(
 			ctx,
 			event.GetPullRequest(),
 			client,
 			cfg.PullRequests.OpenMessage,
 		)
+		return err
 	}
-	if branchDestroyerCheck(
-		&cfg.BranchDestroyer,
-		*event.Action,
-		event.Repo.GetDefaultBranch(),
-		event.PullRequest.Head.GetRef(),
-	) {
-		err = branchDestroyer(
+	return nil
+}
+
+//branchDestroyerCheck checks if branch can be destroyed
+func branchDestroyerCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.BranchDestroyer.Enabled &&
+		event.GetAction() == "closed" &&
+		event.PullRequest.Head.GetRef() != event.Repo.GetDefaultBranch() &&
+		event.PullRequest.GetMerged() &&
+		!checkStringInList(
+			cfg.BranchDestroyer.ProtectedBranches,
+			event.PullRequest.Head.GetRef()) {
+		err := branchDestroyer(
 			ctx,
 			event.GetPullRequest(),
 			client,
 			event.PullRequest.Head.GetRef(),
 		)
+		return err
+	}
+	return nil
+}
+
+//limitPRCheck
+func limitPRCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	prs, err := getPullRequestListForUser(ctx, client, event)
+	if err != nil {
+		return err
+	}
+	maxNumber := cfg.PullRequests.LimitPullRequests.MaxNumber
+	if len(prs) > maxNumber && maxNumber != 0 {
+		if err = reviewComment(
+			ctx,
+			event.GetPullRequest(),
+			client,
+			"You seem to have opened more PR's than this Repo Allows",
+		); err != nil {
+			return err
+		}
+		err = closePullRequest(ctx, client, event)
 	}
 	return err
-
-}
-
-//firstPRCheck checks if a PR has just been opened and
-func firstPRCheck(message, action string) bool {
-	return message != "" && action == "opened"
-}
-
-//branchDestroyerCheck checks if branch can be destroyed
-func branchDestroyerCheck(
-	cfg *types.BranchDestroyer,
-	action, defaultBranch, destroyBranch string,
-) bool {
-	return cfg.Enabled &&
-		action == "completed" &&
-		destroyBranch != defaultBranch &&
-		!checkStringInList(cfg.ProtectedBranches, destroyBranch)
 }
 
 //reviewComment sends a review comment to a Pull Request
@@ -99,9 +142,68 @@ func branchDestroyer(
 ) error {
 	_, err := client.Git.DeleteRef(
 		ctx,
-		*pr.Base.User.Login,
+		pr.Base.User.GetLogin(),
 		pr.Base.Repo.GetName(),
 		fmt.Sprintf("refs/heads/%v", branch),
+	)
+	return err
+}
+
+// getPullRequestListForUser gets all the Pull Requests for the user
+func getPullRequestListForUser(
+	ctx context.Context,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) ([]*github.PullRequest, error) {
+	listOptions := &github.PullRequestListOptions{
+		Head: event.Sender.GetLogin(),
+		Base: event.PullRequest.Base.GetRef(),
+	}
+	prList, _, err := client.PullRequests.List(
+		ctx,
+		event.PullRequest.Base.User.GetLogin(),
+		event.PullRequest.Base.Repo.GetName(),
+		listOptions,
+	)
+	return prList, err
+}
+
+// getPullRequestListForUser gets all the Pull Requests for the user
+func closePullRequest(
+	ctx context.Context,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	pr := event.PullRequest
+	updatedPr := &github.PullRequest{
+		State: github.String("closed"),
+	}
+	_, _, err := client.PullRequests.Edit(
+		ctx,
+		pr.Base.User.GetLogin(),
+		pr.Base.Repo.GetName(),
+		pr.GetNumber(),
+		updatedPr,
+	)
+	return err
+}
+
+// mergePullRequest will merge a pull request with the rebase feature
+func mergePullRequest(
+	ctx context.Context,
+	client *github.Client,
+	pr *github.PullRequest,
+) error {
+	options := &github.PullRequestOptions{
+		MergeMethod: "merge",
+	}
+	_, _, err := client.PullRequests.Merge(
+		ctx,
+		pr.Base.User.GetLogin(),
+		pr.Base.Repo.GetName(),
+		pr.GetNumber(),
+		"",
+		options,
 	)
 	return err
 }

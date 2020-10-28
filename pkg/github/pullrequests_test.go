@@ -252,6 +252,42 @@ func TestPullRequestHandler(t *testing.T) {
 		err := PullRequestHandler(ctx, e, mClient)
 		assert.Equal(t, nil, err)
 	})
+	t.Run("Test Empty Description Prompts a review", func(t *testing.T) {
+
+		input := &github.PullRequestReviewRequest{
+			Body:  github.String(emptyDescriptionMessage),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/2/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/2",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "PATCH", r.Method)
+			},
+		)
+
+		webhookPayload := test.GetMockPayload("empty-description-pr")
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+
+		e.PullRequest.Number = github.Int(2)
+		e.Number = github.Int(2)
+		err := PullRequestHandler(ctx, e, mClient)
+		assert.Equal(t, nil, err)
+	})
 	t.Run("Test BranchDestroyer", func(t *testing.T) {
 		webhookPayload := getIssueCommentMockPayload("merged-pr")
 		mux.HandleFunc(
@@ -460,5 +496,131 @@ func TestMergePullRequest(t *testing.T) {
 		err := mergePullRequest(context.Background(), mClient, e.PullRequest)
 		assert.NotEqual(t, nil, err)
 	})
+}
 
+func TestEmptyDescriptionCheck(t *testing.T) {
+	t.Run("Test Empty Description Prompts a review", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			EmptyDescriptionCheck: types.EmptyDescriptionCheck{
+				Enabled:  true,
+				Enforced: false,
+			},
+		}
+
+		input := &github.PullRequestReviewRequest{
+			Body:  github.String(emptyDescriptionMessage),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		webhookPayload := test.GetMockPayload("empty-description-pr")
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := emptyDescriptionCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Empty Description Prompts a review Enforced", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			EmptyDescriptionCheck: types.EmptyDescriptionCheck{
+				Enabled:  true,
+				Enforced: true,
+			},
+		}
+
+		input := &github.PullRequestReviewRequest{
+			Body:  github.String(emptyDescriptionMessage),
+			Event: github.String("COMMENT"),
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.PullRequestReviewRequest)
+				json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, r.Method, "POST")
+				assert.Equal(t, input, v)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, "PATCH", r.Method)
+			},
+		)
+
+		webhookPayload := test.GetMockPayload("empty-description-pr")
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := emptyDescriptionCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+
+	t.Run("Test Non Empty Description Does Nothing", func(t *testing.T) {
+		mClient, _, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			EmptyDescriptionCheck: types.EmptyDescriptionCheck{
+				Enabled:  true,
+				Enforced: false,
+			},
+		}
+
+		webhookPayload := test.GetMockPayload("opened-pr")
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := emptyDescriptionCheck(context.Background(), cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Error Gets Returned", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			EmptyDescriptionCheck: types.EmptyDescriptionCheck{
+				Enabled:  true,
+				Enforced: false,
+			},
+		}
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/reviews",
+			func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, ``)
+			},
+		)
+		webhookPayload := test.GetMockPayload("empty-description-pr")
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "pull_request")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.PullRequestEvent)
+		err := emptyDescriptionCheck(context.Background(), cfg, mClient, e)
+		assert.NotEqual(t, nil, err)
+	})
 }

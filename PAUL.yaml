@@ -2,6 +2,10 @@ maintainers:
 - Spazzy757
 # Allows for the /label command
 labels: true
+# Checks if an issue or an Pull request has a description
+empty_description_check:
+  enabled: true
+  enforced: true
 # Settings for branch destroyer
 # branch destroyer will not delete your default branch
 # set other "protected" branches here

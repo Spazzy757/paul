@@ -28,6 +28,7 @@ Other Functions:
 * Branch Destroyer: Will delete a branch when it has been merged (conditions: won't delete default branch or any protected branch, see configuration)
 * New PR Message: Paul will post a review message when a new PR is created (condition: wont post message if maintainer opens PR)
 * Pull Request Limiter: Paul will close PR's for a user if they have more than x amount of pull requests already open (see configuration). This will limit the amount of **Work In Progress**
+* Empty Pull Requests: Does not allow Empty Descriptions, two levels, enforced means Paul will close the Pull Request with a message, without enforced Paul will just send a review saying to add a description
 
 ## Configuration
 

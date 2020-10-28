@@ -9,6 +9,10 @@ import (
 	"github.com/google/go-github/v32/github"
 )
 
+const (
+	emptyDescriptionMessage = "There seems to be no description in your Pull Request.Please add an understanding of what this change proposes to do and why it is needed"
+)
+
 //PullRequestHandler handler for the pull request event
 func PullRequestHandler(
 	ctx context.Context,
@@ -36,6 +40,10 @@ func PullRequestHandler(
 	if err != nil {
 		return err
 	}
+	err = emptyDescriptionCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
 	err = limitPRCheck(ctx, cfg, client, event)
 	return err
 }
@@ -56,6 +64,30 @@ func firstPRCheck(
 			client,
 			cfg.PullRequests.OpenMessage,
 		)
+		return err
+	}
+	return nil
+}
+
+// emptyDescriptionCheck checks if there is a description
+func emptyDescriptionCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.EmptyDescriptionCheck.Enabled &&
+		event.GetAction() == "opened" &&
+		event.PullRequest.GetBody() == "" {
+		err := reviewComment(
+			ctx,
+			event.GetPullRequest(),
+			client,
+			emptyDescriptionMessage,
+		)
+		if cfg.EmptyDescriptionCheck.Enforced {
+			err = closePullRequest(ctx, client, event)
+		}
 		return err
 	}
 	return nil

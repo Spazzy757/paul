@@ -33,6 +33,10 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - LimitPullRequests", func(t *testing.T) {
 		assert.NotEqual(t, paulConfig.PullRequests.LimitPullRequests.MaxNumber, nil)
 	})
+	t.Run("Test Loading Config - EmptyDescriptionCheck", func(t *testing.T) {
+		assert.Equal(t, paulConfig.EmptyDescriptionCheck.Enabled, true)
+		assert.Equal(t, paulConfig.EmptyDescriptionCheck.Enforced, true)
+	})
 	t.Run("Test Loading Config - Branch Destroyer", func(t *testing.T) {
 		assert.Equal(t, true, paulConfig.BranchDestroyer.Enabled)
 		assert.Equal(t, []string{"main"}, paulConfig.BranchDestroyer.ProtectedBranches)

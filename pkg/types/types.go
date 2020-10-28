@@ -6,10 +6,17 @@ import (
 
 //PaulConfig defines the struct for type
 type PaulConfig struct {
-	Maintainers     []string        `yaml:"maintainers,omitempty"`
-	PullRequests    PullRequests    `yaml:"pull_requests,omitempty"`
-	Labels          bool            `yaml:"labels,omitempty"`
-	BranchDestroyer BranchDestroyer `yaml:"branch_destroyer,omitempty"`
+	Maintainers           []string              `yaml:"maintainers,omitempty"`
+	PullRequests          PullRequests          `yaml:"pull_requests,omitempty"`
+	Labels                bool                  `yaml:"labels,omitempty"`
+	BranchDestroyer       BranchDestroyer       `yaml:"branch_destroyer,omitempty"`
+	EmptyDescriptionCheck EmptyDescriptionCheck `yaml:"empty_description_check,omitempty"`
+}
+
+//EmptyDescriptionCheck config for empty PR checks
+type EmptyDescriptionCheck struct {
+	Enabled  bool `yaml:"enabled,omitempty"`
+	Enforced bool `yaml:"enforced,omitempty"`
 }
 
 //PullRequests struct

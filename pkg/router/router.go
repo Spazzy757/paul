@@ -32,7 +32,7 @@ func GithubWebHookHandler(w http.ResponseWriter, r *http.Request) {
 	if handleError(w, err) {
 		return
 	}
-	gClient, err := paulclient.GetClient(instllationID)
+	gClient, err := paulclient.GetInstallationClient(instllationID)
 	ctx := context.Background()
 	if handleError(w, err) {
 		return

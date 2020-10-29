@@ -22,9 +22,8 @@ func PullRequestHandler(
 	// Get Paul Config
 	cfg, configErr := config.GetPaulConfig(
 		ctx,
-		event.Repo.Owner.Login,
-		event.Repo.Name,
-		event.Repo.GetContentsURL(),
+		event.Repo.Owner.GetLogin(),
+		event.Repo.GetName(),
 		event.Repo.GetDefaultBranch(),
 		client,
 	)

@@ -14,16 +14,15 @@ const configFile = "PAUL.yaml"
 //GetPaulConfig returns configuration for paul
 func GetPaulConfig(
 	ctx context.Context,
-	owner, repo *string,
-	contentUrl, defaultBranch string,
+	owner, repo, defaultBranch string,
 	client *github.Client,
 ) (types.PaulConfig, error) {
 	var paulCfg types.PaulConfig
 
 	response, err := client.Repositories.DownloadContents(
 		ctx,
-		*owner,
-		*repo,
+		owner,
+		repo,
 		configFile,
 		&github.RepositoryContentGetOptions{
 			Ref: defaultBranch,

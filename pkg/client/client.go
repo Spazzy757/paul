@@ -40,8 +40,8 @@ type authClient struct {
 	Ctx     context.Context
 }
 
-//GetClient returns an authorized Github Client
-func GetClient(installationID int64) (*github.Client, error) {
+//GetInstallationClient returns an authorized Github Client for an installation
+func GetInstallationClient(installationID int64) (*github.Client, error) {
 	ctx := context.Background()
 	cfg, err := newConfig()
 	if err != nil {
@@ -60,6 +60,28 @@ func GetClient(installationID int64) (*github.Client, error) {
 	)
 	tc := oauth2.NewClient(ctx, ts)
 
+	client := github.NewClient(tc)
+	return client, err
+}
+
+//GetClient returns an authorized Github Client
+func GetClient() (*github.Client, error) {
+	ctx := context.Background()
+	cfg, err := newConfig()
+	if err != nil {
+		return &github.Client{}, err
+	}
+	signed, err := getSignedJwtToken(cfg.ApplicationID, cfg.PrivateKey)
+	if err != nil {
+		return &github.Client{}, err
+	}
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{
+			AccessToken: signed,
+			TokenType:   "Bearer",
+		},
+	)
+	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 	return client, err
 }

@@ -17,10 +17,10 @@ If you would like to install Paul, you can find him in the [Github Apps](https:/
 ### PR's and Issues
 
 Commands:
-* `/approve`: Paul will approve a Pull Request (conditions: must be a maintainer)
-* `/merge`: Paul will merge the Pull Request (conditions: must be a maintainer)
+* `/approve`: Paul will approve a Pull Request (conditions: must be a maintainer in PAUL.yaml)
+* `/merge`: Paul will merge the Pull Request (conditions: must be a maintainer in PAUL.yaml)
 * `/label <some-label>`: Paul will label the issue/PR with that label (conditions: must be maintainer and label must exists)
-* `/remove-label <some-label>`: Paul will remove a label from a issue/PR (conditions: must be maintainer and label must exists)
+* `/remove-label <some-label>`: Paul will remove a label from a issue/PR (conditions: must be maintainer in PAUL.yaml and label must exists)
 * `/dog`: Paul will add and image of a dog
 * `/cat`: Paul will add an Image of a cat 
 
@@ -29,6 +29,7 @@ Other Functions:
 * New PR Message: Paul will post a review message when a new PR is created (condition: wont post message if maintainer opens PR)
 * Pull Request Limiter: Paul will close PR's for a user if they have more than x amount of pull requests already open (see configuration). This will limit the amount of **Work In Progress**
 * Empty Pull Requests: Does not allow Empty Descriptions, two levels, enforced means Paul will close the Pull Request with a message, without enforced Paul will just send a review saying to add a description
+* Label Stale Pull Requests: This setting will mark Pull Requests stale if they have not been updated within the specified days
 
 ## Configuration
 
@@ -51,6 +52,8 @@ branch_destroyer:
   protected_branches:
   - main
 pull_requests:
+  # The time in days after a PR should be labeled inactive
+  stale_time: 15
   # This will limit the amount of PR's a single contributer can have
   # Limits work in progress
   limit_pull_requests:

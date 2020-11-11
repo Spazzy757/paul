@@ -23,9 +23,8 @@ func IssueCommentHandler(
 	// load Paul Config from repo
 	cfg, configErr := config.GetPaulConfig(
 		ctx,
-		event.Repo.Owner.Login,
-		event.Repo.Name,
-		event.Repo.GetContentsURL(),
+		event.Repo.Owner.GetLogin(),
+		event.Repo.GetName(),
 		event.Repo.GetDefaultBranch(),
 		client,
 	)

@@ -1,36 +1,23 @@
 package client
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
+	"reflect"
 	"testing"
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/go-github/v32/github"
 	"github.com/stretchr/testify/assert"
 )
-
-type mockRepoClient struct {
-	resp io.ReadCloser
-}
-
-func (m *mockRepoClient) DownloadContents(
-	ctx context.Context,
-	owner, repo, filepath string,
-	opt *github.RepositoryContentGetOptions,
-) (io.ReadCloser, error) {
-	return m.resp, nil
-}
 
 func TestNewConfigNoSecretPath(t *testing.T) {
 
@@ -87,6 +74,49 @@ func TestNewConfigValidSecretPathWithApplicationID(t *testing.T) {
 		t.Fail()
 	}
 }
+func TestGetClient(t *testing.T) {
+	tmpDir := os.TempDir()
+	reader := rand.Reader
+	bitSize := 4096
+	key, err := rsa.GenerateKey(reader, bitSize)
+	assert.Equal(t, err, nil)
+	privateWant := "private"
+	ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(privateWant), 0600)
+	pemSecretfile, err := os.Create(path.Join(tmpDir, "paul-private-key"))
+	assert.Equal(t, err, nil)
+	defer pemSecretfile.Close()
+
+	err = pem.Encode(
+		pemSecretfile,
+		&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	)
+	assert.Equal(t, nil, err)
+
+	defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
+	defer os.RemoveAll(path.Join(tmpDir, "paul-secret-key"))
+	os.Setenv("SECRET_PATH", tmpDir)
+	os.Setenv("APPLICATION_ID", "1234")
+	t.Run("Test returns client with no error", func(t *testing.T) {
+		os.Setenv("SECRET_PATH", tmpDir)
+		os.Setenv("APPLICATION_ID", "1234")
+		client, err := GetClient()
+		expected := &github.Client{}
+		assert.Equal(t, reflect.TypeOf(expected), reflect.TypeOf(client))
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test returns client and error", func(t *testing.T) {
+		os.Setenv("SECRET_PATH", "/doesnt/exists")
+		os.Setenv("APPLICATION_ID", "1234")
+		client, err := GetClient()
+		expected := &github.Client{}
+		assert.Equal(t, reflect.TypeOf(expected), reflect.TypeOf(client))
+		assert.NotEqual(t, nil, err)
+	})
+
+}
 
 func TestGetFirstLine(t *testing.T) {
 	var exampleSecrets = []struct {
@@ -98,9 +128,9 @@ func TestGetFirstLine(t *testing.T) {
 			expectedByte: "New-line ",
 		},
 		{
-			secret: `Newline and text 
+			secret: `Newline and text
 			`,
-			expectedByte: "Newline and text ",
+			expectedByte: "Newline and text",
 		},
 		{
 			secret:       `Example secret2 `,
@@ -119,9 +149,7 @@ func TestGetFirstLine(t *testing.T) {
 
 		t.Run(string(test.secret), func(t *testing.T) {
 			stringNoLines := getFirstLine([]byte(test.secret))
-			if test.expectedByte != string(stringNoLines) {
-				t.Errorf("String after removal - wanted: \"%s\", got \"%s\"", test.expectedByte, test.secret)
-			}
+			assert.Equal(t, test.expectedByte, string(stringNoLines))
 		})
 	}
 }

@@ -44,8 +44,7 @@ func TestGetPaulConfig(t *testing.T) {
 		repo := "paul"
 		cfg, err := GetPaulConfig(
 			context.Background(),
-			&owner, &repo,
-			"PAUL.yaml",
+			owner, repo,
 			"main",
 			mClient,
 		)

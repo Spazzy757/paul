@@ -3,14 +3,17 @@ package main
 import (
 	"context"
 	"fmt"
-	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/Spazzy757/paul/pkg/router"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/Spazzy757/paul/pkg/helpers"
+	"github.com/Spazzy757/paul/pkg/router"
+	"github.com/Spazzy757/paul/pkg/scheduler"
+	"github.com/robfig/cron/v3"
+	log "github.com/sirupsen/logrus"
 )
 
 const startUpLog = `
@@ -48,6 +51,18 @@ func main() {
 			}).Fatal("Server Start Fail")
 		}
 	}()
+	// start scheduled jobs
+	c := cron.New(
+		cron.WithLogger(
+			cron.VerbosePrintfLogger(
+				log.New(),
+			),
+		),
+	)
+	scheduler.AddSchedule(c)
+	c.Start()
+
+	// Prints out ascii art
 	fmt.Println(startUpLog)
 	log.WithFields(log.Fields{
 		"host": host,
@@ -65,4 +80,5 @@ func main() {
 		}).Fatal("Graceful Shutdown Failed")
 	}
 	log.Info("Shutting Down Gracefully")
+	c.Stop()
 }

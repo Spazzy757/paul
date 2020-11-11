@@ -41,7 +41,9 @@ func TestLoadConfig(t *testing.T) {
 		assert.Equal(t, true, paulConfig.BranchDestroyer.Enabled)
 		assert.Equal(t, []string{"main"}, paulConfig.BranchDestroyer.ProtectedBranches)
 	})
-
+	t.Run("Test Loading Config - Stale Time", func(t *testing.T) {
+		assert.NotEqual(t, 0, paulConfig.PullRequests.StaleTime)
+	})
 }
 
 func TestLoadConfigFails(t *testing.T) {

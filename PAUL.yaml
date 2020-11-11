@@ -14,6 +14,8 @@ branch_destroyer:
   protected_branches:
   - main
 pull_requests:
+  # Paul will mark a pull request as "stale" if a Pull Request is not updated for this amount of days
+  stale_time: 15
   limit_pull_requests:
     max_number: 3
   open_message: |

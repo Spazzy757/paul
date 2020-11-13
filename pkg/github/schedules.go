@@ -12,51 +12,92 @@ import (
 
 const staleLabel = "stale"
 
-// MarkPullRequestsAsStale will go through an installations repos
-// and mark Pull Requests as stale if updated at is past a certain
-// amount of days
-func MarkPullRequestsAsStale(
+// ScehduledPullRequests helper struct to limit calls to repos
+type ScehduledJobInformation struct {
+	Cfg          types.PaulConfig
+	Repo         *github.Repository
+	PullRequests []*github.PullRequest
+}
+
+// PullRequestsScheduledJobs will go through an installations repos
+// and run jobs against all Pull Requests where Paul is installed
+func PullRequestsScheduledJobs(
 	ctx context.Context,
 	client *github.Client,
 ) {
+	scheduledJobsInformationList, err := getScehduledJobInformationList(ctx, client)
+	if handleError(err) {
+		return
+	}
+	// Check if Pull Requests Should Be Marked as Stale
+	markPullRequestsStale(ctx, client, scheduledJobsInformationList)
+}
+
+func markPullRequestsStale(
+	ctx context.Context,
+	client *github.Client,
+	informationList []*ScehduledJobInformation,
+) {
+	var stalePullRequests []*github.PullRequest
+	for _, scheduledJobsInformation := range informationList {
+		cfg := scheduledJobsInformation.Cfg
+		if cfg.PullRequests.StaleTime != 0 {
+			stalePullRequests = append(
+				stalePullRequests,
+				checkTimeStamps(cfg, scheduledJobsInformation.PullRequests)...,
+			)
+		}
+	}
+	for _, pullRequest := range stalePullRequests {
+		err := markPullRequestStale(ctx, client, pullRequest)
+		if handleError(err) {
+			continue
+		}
+	}
+}
+
+// Returns for scheduled jobs in a list
+// this reduces the amount of calls needed to each repo
+func getScehduledJobInformationList(
+	ctx context.Context,
+	client *github.Client,
+) ([]*ScehduledJobInformation, error) {
 	// Returns all the repos for this installation
 	// limited to 50
+	var scheduledJobInformations []*ScehduledJobInformation
 	repos, _, err := client.Apps.ListRepos(
 		ctx,
 		// TODO: Remove Limit on Repos
 		&github.ListOptions{PerPage: 50},
 	)
-	if handleError(err) {
-		return
-	}
-	var stalePullRequests []*github.PullRequest
 	for _, repo := range repos {
 		// we ignore th error as it will return an empty paul config
 		// which will do nothing
-		cfg, _ := config.GetPaulConfig(
+		cfg, err := config.GetPaulConfig(
 			ctx,
 			repo.Owner.GetLogin(),
 			repo.GetName(),
 			repo.GetDefaultBranch(),
 			client,
 		)
-		if cfg.PullRequests.StaleTime != 0 {
-			pullRequests, err := listPullRequests(ctx, client, repo)
-			if handleError(err) {
-				return
+		// If error no fetching config carry on
+		// otherwise their is either no config or a connection problem
+		if err == nil {
+			pullRequests, pullRequestErr := listPullRequests(ctx, client, repo)
+			if handleError(pullRequestErr) {
+				continue
 			}
-			stalePullRequests = append(
-				stalePullRequests,
-				checkTimeStamps(cfg, pullRequests)...,
+			scheduledJobInformations = append(
+				scheduledJobInformations,
+				&ScehduledJobInformation{
+					Cfg:          cfg,
+					Repo:         repo,
+					PullRequests: pullRequests,
+				},
 			)
 		}
 	}
-	for _, pullRequest := range stalePullRequests {
-		err = markPullRequestStale(ctx, client, pullRequest)
-		if handleError(err) {
-			return
-		}
-	}
+	return scheduledJobInformations, err
 }
 
 func handleError(err error) bool {
@@ -74,7 +115,7 @@ func markPullRequestStale(
 	client *github.Client,
 	pullRequest *github.PullRequest,
 ) error {
-	// We use the issues client as it Pull Requests are treated as Issues
+	// We use the issues client as Pull Requests are treated as Issues
 	_, _, err := client.Issues.AddLabelsToIssue(
 		ctx,
 		pullRequest.Base.Repo.Owner.GetLogin(),

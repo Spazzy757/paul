@@ -25,7 +25,7 @@ func AddSchedule(c *cron.Cron) {
 			if handleErr(err) {
 				continue
 			}
-			paulgithub.MarkPullRequestsAsStale(ctx, gInstallationClient)
+			paulgithub.PullRequestsScheduledJobs(ctx, gInstallationClient)
 		}
 	})
 }

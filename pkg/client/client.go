@@ -8,6 +8,7 @@ import (
 	"github.com/google/go-github/v32/github"
 	"golang.org/x/oauth2"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
@@ -81,6 +82,7 @@ func GetClient() (*github.Client, error) {
 			TokenType:   "Bearer",
 		},
 	)
+	log.Println("HERE")
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 	return client, err

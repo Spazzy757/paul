@@ -44,6 +44,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - Stale Time", func(t *testing.T) {
 		assert.NotEqual(t, 0, paulConfig.PullRequests.StaleTime)
 	})
+	t.Run("Test Loading Config - Automated Merge", func(t *testing.T) {
+		assert.Equal(t, true, paulConfig.PullRequests.AutomatedMerge)
+	})
 }
 
 func TestLoadConfigFails(t *testing.T) {

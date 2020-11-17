@@ -230,7 +230,7 @@ func mergePullRequest(
 	}
 	_, _, err := client.PullRequests.Merge(
 		ctx,
-		pr.Base.User.GetLogin(),
+		pr.Base.Repo.Owner.GetLogin(),
 		pr.Base.Repo.GetName(),
 		pr.GetNumber(),
 		"",

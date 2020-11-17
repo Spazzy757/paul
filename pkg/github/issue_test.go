@@ -310,8 +310,7 @@ func TestMergeHandler(t *testing.T) {
                     "number":7,
                     "mergeable": true,
                     "base": {
-                        "repo": {"name":"paul"},
-                        "user": {"login":"Spazzy757"}
+                        "repo": {"name":"paul", "owner":{"login":"Spazzy757"}}
                     }
                 }`
 				fmt.Fprint(w, mockPr)
@@ -475,8 +474,7 @@ func TestIssueCommentHandler(t *testing.T) {
                     "number":7,
                     "mergeable": true,
                     "base": {
-                        "repo": {"name":"paul"},
-                        "user": {"login":"Spazzy757"}
+                        "repo": {"name":"paul", "owner":{"login":"Spazzy757"}}
                     }
                 }`
 				fmt.Fprint(w, mockPr)

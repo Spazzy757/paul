@@ -160,6 +160,71 @@ func TestMarkPullRequestsAsStale(t *testing.T) {
 	})
 }
 
+func TestMergePendingPullRequests(t *testing.T) {
+	ctx := context.Background()
+	repo := github.Repository{
+		Owner: &github.User{
+			Login: github.String("Spazzy757"),
+		},
+		Name:          github.String("paul"),
+		DefaultBranch: github.String("main"),
+	}
+	mergeablePullRequest := github.PullRequest{
+		ID:     github.Int64(1),
+		Number: github.Int(1),
+		Labels: []*github.Label{
+			&github.Label{
+				Name: github.String("merge"),
+			},
+		},
+		Merged:    github.Bool(false),
+		Mergeable: github.Bool(true),
+		Base: &github.PullRequestBranch{
+			Repo: &github.Repository{
+				Name: github.String("paul"),
+				Owner: &github.User{
+					Login: github.String("Spazzy757"),
+				},
+			},
+		},
+	}
+	nonMergeablePullRequest := github.PullRequest{
+		ID: github.Int64(2),
+	}
+	cfg := types.PaulConfig{
+		PullRequests: types.PullRequests{
+			StaleTime:      15,
+			AutomatedMerge: true,
+		},
+	}
+	t.Run("Test Mergeable Pull Requests", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/merge",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "PUT")
+				fmt.Fprint(w, `
+			{
+			  "sha": "6dcb09b5b57875f334f61aebed695e2e4193db5e",
+			  "merged": true,
+			  "message": "Pull Request successfully merged"
+			}`)
+			},
+		)
+		mergePendingPullRequests(
+			ctx,
+			mClient,
+			[]*ScehduledJobInformation{
+				{
+					Cfg:          cfg,
+					Repo:         &repo,
+					PullRequests: []*github.PullRequest{&mergeablePullRequest, &nonMergeablePullRequest},
+				},
+			})
+	})
+}
+
 func TestHandleError(t *testing.T) {
 
 	t.Run("Test Error return true", func(t *testing.T) {

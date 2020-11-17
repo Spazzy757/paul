@@ -26,6 +26,7 @@ type PullRequests struct {
 	StaleTime         int               `yaml:"stale_time,omitempty"`
 	CatsEnabled       bool              `yaml:"cats_enabled,omitempty"`
 	DogsEnabled       bool              `yaml:"dogs_enabled,omitempty"`
+	AutomatedMerge    bool              `yaml:"automated_merge"`
 	LimitPullRequests LimitPullRequests `yaml:"limit_pull_requests,omitempty"`
 }
 

@@ -10,7 +10,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-const staleLabel = "stale"
+const (
+	staleLabel = "stale"
+	mergeLabel = "merge"
+)
 
 // ScehduledPullRequests helper struct to limit calls to repos
 type ScehduledJobInformation struct {
@@ -31,6 +34,8 @@ func PullRequestsScheduledJobs(
 	}
 	// Check if Pull Requests Should Be Marked as Stale
 	markPullRequestsStale(ctx, client, scheduledJobsInformationList)
+	// Merges Pull Requests that are viable
+	mergePendingPullRequests(ctx, client, scheduledJobsInformationList)
 }
 
 func markPullRequestsStale(
@@ -52,6 +57,31 @@ func markPullRequestsStale(
 		err := markPullRequestStale(ctx, client, pullRequest)
 		if handleError(err) {
 			continue
+		}
+	}
+}
+
+func mergePendingPullRequests(
+	ctx context.Context,
+	client *github.Client,
+	informationList []*ScehduledJobInformation,
+) {
+	var labeledPullRequests []*github.PullRequest
+	for _, scheduledJobsInformation := range informationList {
+		cfg := scheduledJobsInformation.Cfg
+		if cfg.PullRequests.AutomatedMerge {
+			labeledPullRequests = append(
+				labeledPullRequests,
+				checkLabels(mergeLabel, scheduledJobsInformation.PullRequests)...,
+			)
+		}
+	}
+	for _, pullRequest := range labeledPullRequests {
+		if pullRequest.GetMergeable() {
+			err := mergePullRequest(ctx, client, pullRequest)
+			if handleError(err) {
+				continue
+			}
 		}
 	}
 }
@@ -139,6 +169,21 @@ func checkTimeStamps(
 		}
 	}
 	return stalePullRequests
+}
+
+func checkLabels(
+	label string,
+	prs []*github.PullRequest,
+) []*github.PullRequest {
+	var labeledPullRequests []*github.PullRequest
+	for _, pr := range prs {
+		for _, pullRequestLabel := range pr.Labels {
+			if pullRequestLabel.GetName() == label {
+				labeledPullRequests = append(labeledPullRequests, pr)
+			}
+		}
+	}
+	return labeledPullRequests
 }
 
 func listPullRequests(

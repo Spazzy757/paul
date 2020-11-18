@@ -130,7 +130,7 @@ func TestIncomingWebhook(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/9/labels",
 			func(w http.ResponseWriter, r *http.Request) {
 				var v []string
-				json.NewDecoder(r.Body).Decode(&v)
+				_ = json.NewDecoder(r.Body).Decode(&v)
 				assert.Equal(t, v, labelInput)
 				fmt.Fprint(w, `[{"url":"u"}]`)
 			},

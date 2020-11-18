@@ -88,7 +88,7 @@ func TestPullRequestsScheduledJobs(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/1/labels",
 			func(w http.ResponseWriter, r *http.Request) {
 				var v []string
-				json.NewDecoder(r.Body).Decode(&v)
+				_ = json.NewDecoder(r.Body).Decode(&v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `[{"url":"u"}]`)
 			},
@@ -142,7 +142,7 @@ func TestMarkPullRequestsAsStale(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/1/labels",
 			func(w http.ResponseWriter, r *http.Request) {
 				var v []string
-				json.NewDecoder(r.Body).Decode(&v)
+				_ = json.NewDecoder(r.Body).Decode(&v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `[{"url":"u"}]`)
 			},

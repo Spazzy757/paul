@@ -34,7 +34,7 @@ func TestCreateReview(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/1/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -83,7 +83,7 @@ func TestFirstPRCheck(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/1/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -237,7 +237,7 @@ func TestPullRequestHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/1/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -262,7 +262,7 @@ func TestPullRequestHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/2/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -517,7 +517,7 @@ func TestEmptyDescriptionCheck(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/1/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -552,7 +552,7 @@ func TestEmptyDescriptionCheck(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/1/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)

@@ -30,6 +30,7 @@ Other Functions:
 * Pull Request Limiter: Paul will close PR's for a user if they have more than x amount of pull requests already open (see configuration). This will limit the amount of **Work In Progress**
 * Empty Pull Requests: Does not allow Empty Descriptions, two levels, enforced means Paul will close the Pull Request with a message, without enforced Paul will just send a review saying to add a description
 * Label Stale Pull Requests: This setting will mark Pull Requests stale if they have not been updated within the specified days
+* Automated Merging of Pull Requests: Any pull request labeled with `merge` will be automatically merged every hour if they are mergeable. This means that you can mark a Pull Requests as mergeable before all required checks have passed and once they have passed Paul will merge the Pull Request
 
 ## Configuration
 
@@ -52,6 +53,8 @@ branch_destroyer:
   protected_branches:
   - main
 pull_requests:
+  # The Setting to enable automaed merges
+  automated_merge: true
   # The time in days after a PR should be labeled inactive
   stale_time: 15
   # This will limit the amount of PR's a single contributer can have

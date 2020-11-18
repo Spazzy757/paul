@@ -35,7 +35,7 @@ func TestCreateComment(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/0/comments",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.IssueComment)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `{"id":1}`)
 			},
@@ -63,7 +63,7 @@ func TestHandleCats(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/9/comments",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.IssueComment)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `{"id":1}`)
 			},
@@ -80,7 +80,7 @@ func TestHandleCats(t *testing.T) {
             }
         ]`
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(catAPIResponse))
+			_, _ = w.Write([]byte(catAPIResponse))
 		})
 		httpClient, httpteardown := helpers.MockHTTPClient(h)
 		defer httpteardown()
@@ -114,7 +114,7 @@ func TestHandleDogs(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/9/comments",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.IssueComment)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `{"id":1}`)
 			},
@@ -131,7 +131,7 @@ func TestHandleDogs(t *testing.T) {
             }
         ]`
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(dogAPIResponse))
+			_, _ = w.Write([]byte(dogAPIResponse))
 		})
 		httpClient, httpteardown := helpers.MockHTTPClient(h)
 		defer httpteardown()
@@ -165,7 +165,7 @@ func TestHandleLabels(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/9/labels",
 			func(w http.ResponseWriter, r *http.Request) {
 				var v []string
-				json.NewDecoder(r.Body).Decode(&v)
+				_ = json.NewDecoder(r.Body).Decode(&v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `[{"url":"u"}]`)
 			},
@@ -263,7 +263,7 @@ func TestApproveHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/9/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -340,7 +340,7 @@ func TestMergeHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/9/comments",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.IssueComment)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `{"id":1}`)
 			},
@@ -385,7 +385,7 @@ func TestIssueCommentHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/0/comments",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.IssueComment)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `{"id":1}`)
 			},
@@ -407,7 +407,7 @@ func TestIssueCommentHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/pulls/9/reviews",
 			func(w http.ResponseWriter, r *http.Request) {
 				v := new(github.PullRequestReviewRequest)
-				json.NewDecoder(r.Body).Decode(v)
+				_ = json.NewDecoder(r.Body).Decode(v)
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
@@ -427,7 +427,7 @@ func TestIssueCommentHandler(t *testing.T) {
 			"/repos/Spazzy757/paul/issues/9/labels",
 			func(w http.ResponseWriter, r *http.Request) {
 				var v []string
-				json.NewDecoder(r.Body).Decode(&v)
+				_ = json.NewDecoder(r.Body).Decode(&v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `[{"url":"u"}]`)
 			},

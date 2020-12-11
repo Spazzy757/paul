@@ -77,11 +77,9 @@ func mergePendingPullRequests(
 		}
 	}
 	for _, pullRequest := range labeledPullRequests {
-		if pullRequest.GetMergeable() {
-			err := mergePullRequest(ctx, client, pullRequest)
-			if handleError(err) {
-				continue
-			}
+		err := mergePullRequest(ctx, client, pullRequest)
+		if handleError(err) {
+			continue
 		}
 	}
 }

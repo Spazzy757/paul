@@ -55,7 +55,10 @@ func IssueCommentHandler(
 		// Case /label command
 		case cmd == "label":
 			// handle the labels
-			err = labelHandler(ctx, &cfg, event, client, args)
+			// only a single label can be added at a time
+			// i.e "good first issue"
+			labels := []string{strings.Join(args, " ")}
+			err = labelHandler(ctx, &cfg, event, client, labels)
 		// Case /remove-label command
 		case cmd == "remove-label":
 			err = removeLabelHandler(ctx, &cfg, event, client, args)

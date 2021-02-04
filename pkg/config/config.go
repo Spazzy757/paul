@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
@@ -29,7 +30,19 @@ func GetPaulConfig(
 		},
 	)
 	if err != nil {
-		return paulCfg, fmt.Errorf("unable to download config file: %s", err)
+		// If there is a failure look in the .github directory
+		response, err = client.Repositories.DownloadContents(
+			ctx,
+			owner,
+			repo,
+			filepath.Join(".github", configFile),
+			&github.RepositoryContentGetOptions{
+				Ref: defaultBranch,
+			},
+		)
+		if err != nil {
+			return paulCfg, fmt.Errorf("unable to download config file: %s", err)
+		}
 	}
 	defer response.Close()
 

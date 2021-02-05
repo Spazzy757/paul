@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
@@ -47,7 +48,7 @@ func TestPullRequestsScheduledJobs(t *testing.T) {
 	t.Run("Test Unknown Webhook Payload is Handled correctly", func(t *testing.T) {
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
-		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 		assert.Equal(t, nil, err)
 		mux.HandleFunc(
 			"/installation/repositories",
@@ -72,17 +73,6 @@ func TestPullRequestsScheduledJobs(t *testing.T) {
 				fmt.Fprint(w, response)
 			},
 		)
-		mux.HandleFunc(
-			"/repos/Spazzy757/paul/contents/",
-			func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, r.Method, "GET")
-				fmt.Fprint(w, `[{
-		            "type": "file",
-		            "name": "PAUL.yaml",
-		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
-		        }]`)
-			},
-		)
 		input := []string{"stale"}
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/issues/1/labels",
@@ -91,6 +81,21 @@ func TestPullRequestsScheduledJobs(t *testing.T) {
 				_ = json.NewDecoder(r.Body).Decode(&v)
 				assert.Equal(t, v, input)
 				fmt.Fprint(w, `[{"url":"u"}]`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/contents/",
+			func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, r.Method, "GET")
+				fmt.Fprint(w, `[{
+		            "type": "dir",
+		            "name": ".github",
+		            "path": ".github"
+		           },{
+		            "type": "file",
+		            "name": "PAUL.yaml",
+		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
+		        }]`)
 			},
 		)
 		mux.HandleFunc("/download/PAUL.yaml", func(w http.ResponseWriter, r *http.Request) {

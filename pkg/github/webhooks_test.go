@@ -64,7 +64,7 @@ func TestIncomingWebhook(t *testing.T) {
 	t.Run("Test Incoming Webhook checks PR", func(t *testing.T) {
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
-		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 		assert.Equal(t, nil, err)
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/pulls",
@@ -74,10 +74,14 @@ func TestIncomingWebhook(t *testing.T) {
 			},
 		)
 		mux.HandleFunc(
-			"/repos/Spazzy757/paul/contents/",
+			"/repos/Spazzy757/paul/contents/.github",
 			func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, r.Method, "GET")
 				fmt.Fprint(w, `[{
+		            "type": "dir",
+		            "name": ".github",
+		            "path": ".github"
+		           },{
 		            "type": "file",
 		            "name": "PAUL.yaml",
 		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
@@ -107,7 +111,7 @@ func TestIncomingWebhook(t *testing.T) {
 	t.Run("Test Incoming Webhook checks Issue Comment", func(t *testing.T) {
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
-		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/contents/",
 			func(w http.ResponseWriter, r *http.Request) {

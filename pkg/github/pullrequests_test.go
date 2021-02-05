@@ -207,13 +207,17 @@ func TestPullRequestHandler(t *testing.T) {
 			fmt.Fprint(w, `[{"number":1}]`)
 		},
 	)
-	yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+	yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 	assert.Equal(t, nil, err)
 	mux.HandleFunc(
 		"/repos/Spazzy757/paul/contents/",
 		func(w http.ResponseWriter, r *http.Request) {
 			assert.Equal(t, r.Method, "GET")
 			fmt.Fprint(w, `[{
+		            "type": "dir",
+		            "name": ".github",
+		            "path": ".github"
+		           },{
 		            "type": "file",
 		            "name": "PAUL.yaml",
 		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
@@ -224,6 +228,7 @@ func TestPullRequestHandler(t *testing.T) {
 		assert.Equal(t, r.Method, "GET")
 		fmt.Fprint(w, string(yamlFile))
 	})
+
 	ctx := context.Background()
 	t.Run("Test firstPR", func(t *testing.T) {
 		webhookPayload := getIssueCommentMockPayload("opened-pr")

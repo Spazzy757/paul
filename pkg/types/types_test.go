@@ -10,7 +10,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	var paulConfig PaulConfig
 
-	yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+	yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 	assert.Equal(t, nil, err)
 
 	err = paulConfig.LoadConfig(yamlFile)

@@ -20,7 +20,7 @@ const (
 
 func TestGetPaulConfig(t *testing.T) {
 	t.Run("Test Read Paul Config Returns Valid Paul Config", func(t *testing.T) {
-		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 		assert.Equal(t, nil, err)
 
 		mClient, mux, serverURL, teardown := test.GetMockClient()
@@ -55,7 +55,7 @@ func TestGetPaulConfig(t *testing.T) {
 		assert.NotEqual(t, cfg.PullRequests.DogsEnabled, false)
 	})
 	t.Run("Test Read Paul Config Returns Valid Paul Config if its in .github directory", func(t *testing.T) {
-		yamlFile, err := ioutil.ReadFile("../../PAUL.yaml")
+		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
 		assert.Equal(t, nil, err)
 
 		mClient, mux, serverURL, teardown := test.GetMockClient()

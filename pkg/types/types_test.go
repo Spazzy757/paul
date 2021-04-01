@@ -47,6 +47,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - Automated Merge", func(t *testing.T) {
 		assert.Equal(t, true, paulConfig.PullRequests.AutomatedMerge)
 	})
+	t.Run("Test Loading Config - GiphyEnabled", func(t *testing.T) {
+		assert.Equal(t, true, paulConfig.PullRequests.GiphyEnabled)
+	})
 }
 
 func TestLoadConfigFails(t *testing.T) {

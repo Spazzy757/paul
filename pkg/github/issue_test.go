@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/Spazzy757/paul/pkg/animals"
+	"github.com/Spazzy757/paul/pkg/gif"
 	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
@@ -97,6 +98,30 @@ func TestHandleCats(t *testing.T) {
 		err := catsHandler(context.Background(), e, mClient, catClient)
 		assert.Equal(t, nil, err)
 	})
+	t.Run("Test Issue Comment Webhook Fails", func(t *testing.T) {
+		mClient, _, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		webhookPayload := getIssueCommentMockPayload("cat-command")
+		catAPIResponse := `test`
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(catAPIResponse))
+		})
+		httpClient, httpteardown := helpers.MockHTTPClient(h)
+		defer httpteardown()
+
+		catClient := animals.NewCatClient()
+		catClient.HttpClient = httpClient
+		catClient.Url = "https://example.com"
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := catsHandler(context.Background(), e, mClient, catClient)
+		assert.NotEqual(t, nil, err)
+	})
 }
 
 func TestHandleDogs(t *testing.T) {
@@ -146,6 +171,29 @@ func TestHandleDogs(t *testing.T) {
 		e := event.(*github.IssueCommentEvent)
 		err := dogsHandler(context.Background(), e, mClient, dogClient)
 		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Issue Comment Webhook Fails", func(t *testing.T) {
+		mClient, _, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		webhookPayload := getIssueCommentMockPayload("dog-command")
+		dogAPIResponse := `test`
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(dogAPIResponse))
+		})
+		httpClient, httpteardown := helpers.MockHTTPClient(h)
+		defer httpteardown()
+
+		dogClient := animals.NewDogClient()
+		dogClient.HttpClient = httpClient
+		dogClient.Url = "https://example.com"
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := dogsHandler(context.Background(), e, mClient, dogClient)
+		assert.NotEqual(t, nil, err)
 	})
 }
 
@@ -504,4 +552,90 @@ func TestIssueCommentHandler(t *testing.T) {
 		assert.Equal(t, nil, err)
 	})
 
+}
+
+func TestHandleGif(t *testing.T) {
+	t.Run("Test Issue Comment Webhook is Handled correctly", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		input := &github.IssueComment{
+			Body: github.String(
+				"![giphy](https://media1.giphy.com/media/iXQ8SgaMQAgtq/200.gif?cid=479f44c89j1oe6ka1wdran4m31ljfqx6scvrqbcj08ly81iq&rid=200.gif)",
+			),
+		}
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/issues/9/comments",
+			func(w http.ResponseWriter, r *http.Request) {
+				v := new(github.IssueComment)
+				_ = json.NewDecoder(r.Body).Decode(v)
+				assert.Equal(t, v, input)
+				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+
+		webhookPayload := getIssueCommentMockPayload("giphy-command")
+		giphyResponse := `
+		{
+			"data": [
+				{
+					"images":
+					{
+						"fixed_height":
+						{
+							"height": "200",
+							"width": "356",
+							"size": "319732",
+							"url": "https://media1.giphy.com/media/iXQ8SgaMQAgtq/200.gif?cid=479f44c89j1oe6ka1wdran4m31ljfqx6scvrqbcj08ly81iq&rid=200.gif",
+							"mp4_size": "55870",
+							"mp4": "https://media1.giphy.com/media/iXQ8SgaMQAgtq/200.mp4?cid=479f44c89j1oe6ka1wdran4m31ljfqx6scvrqbcj08ly81iq&rid=200.mp4",
+							"webp_size": "156666",
+							"webp": "https://media1.giphy.com/media/iXQ8SgaMQAgtq/200.webp?cid=479f44c89j1oe6ka1wdran4m31ljfqx6scvrqbcj08ly81iq&rid=200.webp"
+						}
+					}
+				}
+			]
+		}
+        `
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(giphyResponse))
+		})
+		httpClient, httpteardown := helpers.MockHTTPClient(h)
+		defer httpteardown()
+
+		giphyClient := gif.NewGifClient()
+		giphyClient.HttpClient = httpClient
+		giphyClient.Url = "https://example.com"
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := giphyHandler(context.Background(), e, mClient, giphyClient, []string{"LGTM"})
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Issue Comment Webhook Fails", func(t *testing.T) {
+		mClient, _, _, teardown := test.GetMockClient()
+		defer teardown()
+
+		webhookPayload := getIssueCommentMockPayload("giphy-command")
+		giphyResponse := `test`
+		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte(giphyResponse))
+		})
+		httpClient, httpteardown := helpers.MockHTTPClient(h)
+		defer httpteardown()
+
+		giphyClient := gif.NewGifClient()
+		giphyClient.HttpClient = httpClient
+		giphyClient.Url = "https://example.com"
+
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := giphyHandler(context.Background(), e, mClient, giphyClient, []string{"LGTM"})
+		assert.NotEqual(t, nil, err)
+	})
 }

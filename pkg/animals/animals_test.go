@@ -1,10 +1,11 @@
 package animals
 
 import (
-	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
+
+	"github.com/Spazzy757/paul/pkg/helpers"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestClientGetCat(t *testing.T) {

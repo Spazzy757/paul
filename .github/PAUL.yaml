@@ -1,5 +1,5 @@
 maintainers:
-- Spazzy757
+  - Spazzy757
 # Allows for the /label command
 labels: true
 # Checks if an issue or an Pull request has a description
@@ -12,7 +12,7 @@ empty_description_check:
 branch_destroyer:
   enabled: true
   protected_branches:
-  - main
+    - main
 pull_requests:
   # Specifies whether to allow for automated merging of Pull Requests
   automated_merge: true
@@ -28,3 +28,4 @@ pull_requests:
   cats_enabled: true
   dogs_enabled: true
   allow_approval: true
+  giphy_enabled: true

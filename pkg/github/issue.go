@@ -7,6 +7,7 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/animals"
 	"github.com/Spazzy757/paul/pkg/config"
+	"github.com/Spazzy757/paul/pkg/gif"
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v32/github"
 )
@@ -52,6 +53,10 @@ func IssueCommentHandler(
 			// Get the Dog Client
 			animalClient := animals.NewDogClient()
 			err = dogsHandler(ctx, event, client, animalClient)
+		case cmd == "giphy" && cfg.PullRequests.GiphyEnabled:
+			// Get the Dog Client
+			giphyClient := gif.NewGifClient()
+			err = giphyHandler(ctx, event, client, giphyClient, args)
 		// Case /label command
 		case cmd == "label":
 			// handle the labels
@@ -142,6 +147,23 @@ func dogsHandler(
 		return err
 	}
 	message := fmt.Sprintf("Despite how it looks it is well trained\n\n ![loyal soldier](%v)", dog.Url)
+	err = createIssueComment(ctx, is, client, message)
+	return err
+}
+
+//giphyHandler is the handler for the /giphy command
+func giphyHandler(
+	ctx context.Context,
+	is *github.IssueCommentEvent,
+	client *github.Client,
+	giphyClient *gif.Client,
+	searchTerm []string,
+) error {
+	gifUrl, err := giphyClient.GetLink(searchTerm[0])
+	if err != nil {
+		return err
+	}
+	message := fmt.Sprintf("![giphy](%v)", gifUrl)
 	err = createIssueComment(ctx, is, client, message)
 	return err
 }

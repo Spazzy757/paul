@@ -25,6 +25,7 @@ Commands:
 - `/remove-label <some-label>`: Paul will remove a label from a issue/PR (conditions: must be maintainer in PAUL.yaml and label must exists)
 - `/dog`: Paul will add and image of a dog
 - `/cat`: Paul will add an Image of a cat
+- `/giphy <some description>`: Paul will fetch a giphy that matches the description and add it to the PR/Issue (only single word descriptions are currently supported)
 
 Other Functions:
 
@@ -74,6 +75,8 @@ pull_requests:
   # Allows any maintainer in the list to run /approve
   # Paul will approve the PR (Does not merge it)
   allow_approval: true
+  # enables the /giphy command
+  giphy_enabled: true
 ```
 
 ## Contributing

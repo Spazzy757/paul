@@ -1,5 +1,5 @@
 # builder image
-FROM golang:1.14-buster as builder
+FROM golang:1.15-buster as builder
 
 
 RUN mkdir /build

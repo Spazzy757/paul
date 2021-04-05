@@ -4,10 +4,10 @@ name: CICD
 on:
   push:
     branches:
-    - main
+      - main
   pull_request:
     branches:
-    - main
+      - main
   release:
     types:
       - edited
@@ -22,43 +22,43 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-    - uses: actions/checkout@v2
-    
-    # Setup Go
-    - name: Setup Go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '1.14.0' # The Go version to download (if necessary) and use.
-    
-    # Install all the dependencies
-    - name: Install dependencies
-      run: |
-        go version
-        go get -u golang.org/x/lint/golint
-        
-    # Run build of the application
-    - name: Run build
-      run: go build ./cmd/paul
-      
-    # Run vet & lint on the code
-    - name: Run vet & lint
-      run: |
-        go vet ./...
-        golint ./...
-    
-    # Run testing on the code
-    - name: Run testing
-      run: go test ./... -v
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
 
-    - name: Run Coverage
-      run: go test ./... -coverprofile=coverage.txt -covermode=atomic
+      # Setup Go
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.15.0" # The Go version to download (if necessary) and use.
 
-    - name: Upload coverage report
-      if: github.repository == 'Spazzy757/paul'
-      uses: codecov/codecov-action@v1.0.2
-      with:
-        token: ${{ secrets.CODCOV_TOKEN }}
-        file: ./coverage.txt
-        flags: unittests
-        name: codecov-umbrella
+      # Install all the dependencies
+      - name: Install dependencies
+        run: |
+          go version
+          go get -u golang.org/x/lint/golint
+
+      # Run build of the application
+      - name: Run build
+        run: go build ./cmd/paul
+
+      # Run vet & lint on the code
+      - name: Run vet & lint
+        run: |
+          go vet ./...
+          golint ./...
+
+      # Run testing on the code
+      - name: Run testing
+        run: go test ./... -v
+
+      - name: Run Coverage
+        run: go test ./... -coverprofile=coverage.txt -covermode=atomic
+
+      - name: Upload coverage report
+        if: github.repository == 'Spazzy757/paul'
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{ secrets.CODCOV_TOKEN }}
+          file: ./coverage.txt
+          flags: unittests
+          name: codecov-umbrella

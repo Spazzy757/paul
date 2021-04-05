@@ -14,8 +14,9 @@ import (
 	"reflect"
 	"testing"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/google/go-github/v32/github"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -81,7 +82,7 @@ func TestGetClient(t *testing.T) {
 	key, err := rsa.GenerateKey(reader, bitSize)
 	assert.Equal(t, err, nil)
 	privateWant := "private"
-	ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(privateWant), 0600)
+	_ = ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(privateWant), 0600)
 	pemSecretfile, err := os.Create(path.Join(tmpDir, "paul-private-key"))
 	assert.Equal(t, err, nil)
 	defer pemSecretfile.Close()
@@ -110,6 +111,25 @@ func TestGetClient(t *testing.T) {
 	t.Run("Test returns client and error", func(t *testing.T) {
 		os.Setenv("SECRET_PATH", "/doesnt/exists")
 		os.Setenv("APPLICATION_ID", "1234")
+		client, err := GetClient()
+		expected := &github.Client{}
+		assert.Equal(t, reflect.TypeOf(expected), reflect.TypeOf(client))
+		assert.NotEqual(t, nil, err)
+	})
+	t.Run("Test returns client and error when key is not valid", func(t *testing.T) {
+		privateWant := "private"
+		secretWant := "secret"
+		appIDWant := "321"
+		tmpDir := os.TempDir()
+
+		_ = ioutil.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
+		_ = ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
+
+		defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
+		defer os.RemoveAll(path.Join(tmpDir, "paul-secret-key"))
+
+		os.Setenv("SECRET_PATH", tmpDir)
+		os.Setenv("APPLICATION_ID", appIDWant)
 		client, err := GetClient()
 		expected := &github.Client{}
 		assert.Equal(t, reflect.TypeOf(expected), reflect.TypeOf(client))
@@ -162,12 +182,30 @@ func TestAccessToken(t *testing.T) {
 		Client:  http.DefaultClient,
 	}
 
-	privateWant := "private"
+	tmpDir := os.TempDir()
+	reader := rand.Reader
+	bitSize := 4096
+	key, err := rsa.GenerateKey(reader, bitSize)
+	assert.Equal(t, err, nil)
+
+	pemSecretfile, err := os.Create(path.Join(tmpDir, "paul-private-key"))
+	assert.Equal(t, err, nil)
+	defer pemSecretfile.Close()
+
+	err = pem.Encode(
+		pemSecretfile,
+		&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	)
+	assert.Equal(t, err, nil)
+
+	defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
+
 	secretWant := "secret"
 	appIDWant := "321"
-	tmpDir := os.TempDir()
 
-	ioutil.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
 	ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
 
 	defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
@@ -189,58 +227,6 @@ func TestAccessToken(t *testing.T) {
 
 		token, _ := getAccessToken(aClient, cfg, 1)
 		assert.Equal(t, token, "")
-	})
-}
-
-func TestSignedJWTToken(t *testing.T) {
-	tmpDir := os.TempDir()
-	reader := rand.Reader
-	bitSize := 4096
-	key, err := rsa.GenerateKey(reader, bitSize)
-	assert.Equal(t, err, nil)
-
-	publicKey := key.PublicKey
-	pemSecretfile, err := os.Create(path.Join(tmpDir, "privatekey.pem"))
-	assert.Equal(t, err, nil)
-	defer pemSecretfile.Close()
-
-	err = pem.Encode(
-		pemSecretfile,
-		&pem.Block{
-			Type:  "PRIVATE KEY",
-			Bytes: x509.MarshalPKCS1PrivateKey(key),
-		},
-	)
-	assert.Equal(t, err, nil)
-	pemPublicfile, err := os.Create(path.Join(tmpDir, "pubKey.pem"))
-	assert.Equal(t, err, nil)
-	defer pemPublicfile.Close()
-
-	asn1Bytes, _ := x509.MarshalPKIXPublicKey(&publicKey)
-	assert.Equal(t, err, nil)
-	_ = pem.Encode(
-		pemPublicfile,
-		&pem.Block{
-			Type:  "PUBLIC KEY",
-			Bytes: asn1Bytes,
-		},
-	)
-
-	defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
-	defer os.RemoveAll(path.Join(tmpDir, "pubkey.pem"))
-
-	pubKeyReader, _ := ioutil.ReadFile(path.Join(tmpDir, "pubKey.pem"))
-	signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
-	t.Run("Test Getting a Singed Token", func(t *testing.T) {
-		tokenString, err := getSignedJwtToken("123456789", string(signingKey))
-		assert.Equal(t, err, nil)
-		pubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubKeyReader)
-		assert.Equal(t, err, nil)
-		claims := &jwt.StandardClaims{}
-		keyFn := func(t *jwt.Token) (interface{}, error) { return &pubKey, nil }
-		token, _ := jwt.ParseWithClaims(tokenString, claims, keyFn)
-		claims, _ = token.Claims.(*jwt.StandardClaims)
-		assert.Equal(t, "123456789", claims.Issuer)
 	})
 }
 
@@ -306,4 +292,70 @@ func TestMakeAccessTokenForInstallation(t *testing.T) {
 		assert.NotEqual(t, nil, err)
 	})
 
+}
+
+func TestGetSignedToken(t *testing.T) {
+	tmpDir := os.TempDir()
+	reader := rand.Reader
+	bitSize := 4096
+	key, err := rsa.GenerateKey(reader, bitSize)
+	assert.Equal(t, err, nil)
+
+	pemSecretfile, err := os.Create(path.Join(tmpDir, "privatekey.pem"))
+	assert.Equal(t, err, nil)
+	defer pemSecretfile.Close()
+
+	err = pem.Encode(
+		pemSecretfile,
+		&pem.Block{
+			Type:  "PRIVATE KEY",
+			Bytes: x509.MarshalPKCS1PrivateKey(key),
+		},
+	)
+	assert.Equal(t, err, nil)
+
+	defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
+
+	signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
+	t.Run("Test Getting a Singed Token", func(t *testing.T) {
+		tokenString, err := getSignedToken("123456789", string(signingKey))
+		assert.Equal(t, err, nil)
+		token, err := jwt.Parse(
+			[]byte(tokenString),
+			jwt.WithValidate(true),
+			jwt.WithVerify(jwa.RS256, &key.PublicKey),
+		)
+		assert.Equal(t, err, nil)
+		assert.Equal(t, "123456789", token.Issuer())
+	})
+	t.Run("Test Getting a Singed Token", func(t *testing.T) {
+		_, err := getSignedToken("123456789", "invalidKey")
+		assert.NotEqual(t, err, nil)
+	})
+	t.Run("Test Bad RSA key", func(t *testing.T) {
+		tmpDir := os.TempDir()
+		reader := rand.Reader
+		bitSize := 32
+		key, err := rsa.GenerateKey(reader, bitSize)
+		assert.Equal(t, err, nil)
+
+		pemSecretfile, err := os.Create(path.Join(tmpDir, "privatekey.pem"))
+		assert.Equal(t, err, nil)
+		defer pemSecretfile.Close()
+
+		err = pem.Encode(
+			pemSecretfile,
+			&pem.Block{
+				Type:  "PRIVATE KEY",
+				Bytes: x509.MarshalPKCS1PrivateKey(key),
+			},
+		)
+		assert.Equal(t, err, nil)
+
+		defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
+
+		signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
+		_, err = getSignedToken("123456789", string(signingKey))
+		assert.NotEqual(t, err, nil)
+	})
 }

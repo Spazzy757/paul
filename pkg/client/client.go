@@ -2,17 +2,25 @@ package client
 
 import (
 	"context"
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
+	"errors"
 	"fmt"
-	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/google/go-github/v32/github"
-	"golang.org/x/oauth2"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/google/go-github/v32/github"
+	"github.com/lestrrat-go/jwx/jwa"
+	"github.com/lestrrat-go/jwx/jwk"
+	"github.com/lestrrat-go/jwx/jwt"
+	"golang.org/x/oauth2"
 )
 
 const (
@@ -71,7 +79,7 @@ func GetClient() (*github.Client, error) {
 	if err != nil {
 		return &github.Client{}, err
 	}
-	signed, err := getSignedJwtToken(cfg.ApplicationID, cfg.PrivateKey)
+	signed, err := getSignedToken(cfg.ApplicationID, cfg.PrivateKey)
 	if err != nil {
 		return &github.Client{}, err
 	}
@@ -168,7 +176,7 @@ func makeAccessTokenForInstallation(
 	installation int64,
 	privateKey string,
 ) (string, error) {
-	signed, err := getSignedJwtToken(appID, privateKey)
+	signed, err := getSignedToken(appID, privateKey)
 	if err != nil {
 		return "", err
 	}
@@ -201,27 +209,44 @@ func makeAccessTokenForInstallation(
 	return jwtAuth.Token, jsonErr
 }
 
-// GetSignedJwtToken get a tokens signed with private key
-func getSignedJwtToken(appID string, privateKey string) (string, error) {
-
+//getSignedToken Returns a signed JWT Token
+func getSignedToken(appID string, privateKey string) (string, error) {
 	keyBytes := []byte(privateKey)
-	key, keyErr := jwt.ParseRSAPrivateKeyFromPEM(keyBytes)
-	if keyErr != nil {
-		return "", keyErr
+	pKey, err := bytesToPrivateKey(keyBytes)
+
+	if err != nil {
+		return "", err
 	}
+	realKey, err := jwk.New(pKey)
+	if err != nil {
+		return "", err
+	}
+	// Create the token
+	token := jwt.New()
 
 	now := time.Now()
-	claims := jwt.StandardClaims{
-		Issuer:    appID,
-		IssuedAt:  now.Unix(),
-		ExpiresAt: now.Add(time.Minute * 9).Unix(),
+	// Ignore errors of setting claims
+	_ = token.Set(jwt.IssuerKey, appID)
+	_ = token.Set(jwt.IssuedAtKey, now.Unix())
+	_ = token.Set(jwt.ExpirationKey, now.Add(time.Minute*9).Unix())
+
+	// Sign the token and generate a payload
+	signed, err := jwt.Sign(token, jwa.RS256, realKey)
+	if err != nil {
+		log.Printf("HERE")
+		return "", err
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	return string(signed), nil
+}
 
-	signedVal, signErr := token.SignedString(key)
-	if signErr != nil {
-		return "", signErr
+//BytesToPrivateKey bytes to private key
+func bytesToPrivateKey(priv []byte) (*rsa.PrivateKey, error) {
+	block, _ := pem.Decode(priv)
+	if block == nil {
+		return &rsa.PrivateKey{}, errors.New("Unable to Decode Private Key")
 	}
-	return string(signedVal), nil
+	b := block.Bytes
+	key, err := x509.ParsePKCS1PrivateKey(b)
+	return key, err
 }

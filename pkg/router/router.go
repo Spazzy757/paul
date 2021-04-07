@@ -17,9 +17,8 @@ import (
 //GetRouter .
 func GetRouter() *mux.Router {
 	r := mux.NewRouter()
-	r.HandleFunc("/", GithubWebHookHandler)
 	r.HandleFunc("/webhooks", GithubWebHookHandler)
-	r.PathPrefix("/web").Handler(http.FileServer(http.Dir("./web/dist")))
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./web/dist")))
 	return r
 }
 

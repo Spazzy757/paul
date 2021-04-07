@@ -3,7 +3,7 @@ module github.com/Spazzy757/paul
 go 1.14
 
 require (
-	github.com/google/go-github/v32 v32.1.0
+	github.com/google/go-github/v33 v33.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/lestrrat-go/jwx v1.1.7
 	github.com/pkg/errors v0.9.1

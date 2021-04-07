@@ -3,8 +3,9 @@ package router
 import (
 	"context"
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	paulclient "github.com/Spazzy757/paul/pkg/client"
 	paulgithub "github.com/Spazzy757/paul/pkg/github"
@@ -17,6 +18,8 @@ import (
 func GetRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/", GithubWebHookHandler)
+	r.HandleFunc("/webhooks", GithubWebHookHandler)
+	r.PathPrefix("/web").Handler(http.FileServer(http.Dir("./web/dist")))
 	return r
 }
 

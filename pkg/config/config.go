@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v32/github"
+	"github.com/google/go-github/v33/github"
 )
 
 const configFile = "PAUL.yaml"
@@ -20,7 +20,7 @@ func GetPaulConfig(
 ) (types.PaulConfig, error) {
 	var paulCfg types.PaulConfig
 
-	response, err := client.Repositories.DownloadContents(
+	response, _, err := client.Repositories.DownloadContents(
 		ctx,
 		owner,
 		repo,
@@ -31,7 +31,7 @@ func GetPaulConfig(
 	)
 	if err != nil {
 		// If there is a failure look in the .github directory
-		response, err = client.Repositories.DownloadContents(
+		response, _, err = client.Repositories.DownloadContents(
 			ctx,
 			owner,
 			repo,

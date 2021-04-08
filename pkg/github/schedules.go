@@ -6,7 +6,7 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v34/github"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -98,7 +98,7 @@ func getScehduledJobInformationList(
 		// TODO: Remove Limit on Repos
 		&github.ListOptions{PerPage: 50},
 	)
-	for _, repo := range repos {
+	for _, repo := range repos.Repositories {
 		// we ignore th error as it will return an empty paul config
 		// which will do nothing
 		cfg, err := config.GetPaulConfig(

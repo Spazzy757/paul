@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v34/github"
 )
 
 const (

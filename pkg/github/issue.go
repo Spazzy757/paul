@@ -9,7 +9,7 @@ import (
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/gif"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v33/github"
+	"github.com/google/go-github/v34/github"
 )
 
 /*

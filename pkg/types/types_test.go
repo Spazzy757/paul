@@ -50,6 +50,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - GiphyEnabled", func(t *testing.T) {
 		assert.Equal(t, true, paulConfig.PullRequests.GiphyEnabled)
 	})
+	t.Run("Test Loading Config - DCOCheckEnabled", func(t *testing.T) {
+		assert.Equal(t, true, paulConfig.PullRequests.DCOCheck)
+	})
 }
 
 func TestLoadConfigFails(t *testing.T) {

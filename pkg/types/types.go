@@ -29,6 +29,7 @@ type PullRequests struct {
 	GiphyEnabled      bool              `yaml:"giphy_enabled,omitempty"`
 	AutomatedMerge    bool              `yaml:"automated_merge"`
 	LimitPullRequests LimitPullRequests `yaml:"limit_pull_requests,omitempty"`
+	DCOCheck          bool              `yaml:"dco_check,omitempty"`
 }
 
 //LimitPullRequests struct

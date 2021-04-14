@@ -14,6 +14,8 @@ branch_destroyer:
   protected_branches:
     - main
 pull_requests:
+  # Enables DCO check on commits
+  dco_check: true
   # Specifies whether to allow for automated merging of Pull Requests
   automated_merge: true
   # Paul will mark a pull request as "stale" if a Pull Request is not updated for this amount of days

@@ -14,7 +14,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/go-github/v34/github"
+	"github.com/google/go-github/v35/github"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/assert"

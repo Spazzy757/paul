@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+
+	log "github.com/sirupsen/logrus"
 )
 
 /*
@@ -17,6 +19,15 @@ func GetEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+//LogRateLimit logs out the current rate limit for an action
+func LogRateLimit(action string, limit int, remaining int) {
+	log.WithFields(log.Fields{
+		"Action":    action,
+		"Limit":     limit,
+		"Remaining": remaining,
+	}).Info("Rate Limit")
 }
 
 //MockHTTPClient A helper to Mock out Http Servers for testing

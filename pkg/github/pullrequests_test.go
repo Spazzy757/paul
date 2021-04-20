@@ -228,6 +228,38 @@ func TestPullRequestHandler(t *testing.T) {
 		assert.Equal(t, r.Method, "GET")
 		fmt.Fprint(w, string(yamlFile))
 	})
+	mux.HandleFunc(
+		"/repos/Spazzy757/paul/commits/83e12d84247dcc85e05ea18d558be01ce6b0c128/check-runs",
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{"total_count":1,
+                                "check_runs": [{
+                                    "id": 1,
+                                    "head_sha": "deadbeef",
+                                    "status": "completed",
+                                    "conclusion": "neutral",
+                                    "started_at": "2018-05-04T01:14:52Z",
+                                    "completed_at": "2018-05-04T01:14:52Z"}]}`)
+		},
+	)
+
+	mux.HandleFunc(
+		"/repos/Spazzy757/paul/check-runs/1",
+		func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprint(w, `{
+			            "id": 1,
+                        "name":"DeveloperCertificateOfOrigin",
+						"status": "completed",
+						"conclusion": "failed",
+						"started_at": "2018-05-04T01:14:52Z",
+						"completed_at": "2018-05-04T01:14:52Z",
+                        "output":{
+                            "title": "Mighty test report",
+							"summary":"There are 0 failures, 2 warnings and 1 notice",
+							"text":"You may have misspelled some words."
+                        }
+                }`)
+		},
+	)
 
 	ctx := context.Background()
 	t.Run("Test firstPR", func(t *testing.T) {
@@ -246,6 +278,24 @@ func TestPullRequestHandler(t *testing.T) {
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/commits",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `[
+					  {
+						"sha": "2",
+						"parents": [
+						  {
+							"sha": "1"
+						  }
+						],
+                        "commit": {
+                            "message": "Signed-off-by: test"
+                        }
+					  }
+					]`)
 			},
 		)
 
@@ -271,6 +321,24 @@ func TestPullRequestHandler(t *testing.T) {
 				assert.Equal(t, r.Method, "POST")
 				assert.Equal(t, input, v)
 				fmt.Fprint(w, `{"id":1}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/2/commits",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `[
+					  {
+						"sha": "2",
+						"parents": [
+						  {
+							"sha": "1"
+						  }
+						],
+                        "commit": {
+                            "message": "Signed-off-by: test"
+                        }
+					  }
+					]`)
 			},
 		)
 		mux.HandleFunc(
@@ -627,5 +695,147 @@ func TestEmptyDescriptionCheck(t *testing.T) {
 		e := event.(*github.PullRequestEvent)
 		err := emptyDescriptionCheck(context.Background(), cfg, mClient, e)
 		assert.NotEqual(t, nil, err)
+	})
+}
+
+func TestDCOCheck(t *testing.T) {
+	ctx := context.Background()
+	webhookPayload := test.GetMockPayload("opened-pr")
+
+	req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+	req.Header.Set("X-GitHub-Event", "pull_request")
+
+	event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+	e := event.(*github.PullRequestEvent)
+	t.Run("Test DCO Check Disabled", func(t *testing.T) {
+		mClient, _, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				DCOCheck: false,
+			},
+		}
+		err := dcoCheck(ctx, cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test DCO Check Unsigned", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				DCOCheck: true,
+			},
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/commits/"+e.PullRequest.Head.GetSHA()+"/check-runs",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `{"total_count":1,
+                                "check_runs": [{
+                                    "id": 1,
+                                    "head_sha": "deadbeef",
+                                    "status": "completed",
+                                    "conclusion": "neutral",
+                                    "started_at": "2018-05-04T01:14:52Z",
+                                    "completed_at": "2018-05-04T01:14:52Z"}]}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/commits",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `[
+					  {
+						"sha": "2",
+						"parents": [
+						  {
+							"sha": "1"
+						  }
+						],
+                        "commit": {
+                            "message": "Test"
+                        }
+					  }
+					]`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/check-runs/1",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `{
+			            "id": 1,
+                        "name":"DeveloperCertificateOfOrigin",
+						"status": "completed",
+						"conclusion": "failed",
+						"started_at": "2018-05-04T01:14:52Z",
+						"completed_at": "2018-05-04T01:14:52Z",
+                        "output":{
+                            "title": "Mighty test report",
+							"summary":"There are 0 failures, 2 warnings and 1 notice",
+							"text":"You may have misspelled some words."
+                        }
+                }`)
+			},
+		)
+		err := dcoCheck(ctx, cfg, mClient, e)
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test DCO Check Signed", func(t *testing.T) {
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := types.PaulConfig{
+			PullRequests: types.PullRequests{
+				DCOCheck: true,
+			},
+		}
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/commits/"+e.PullRequest.Head.GetSHA()+"/check-runs",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `{"total_count":1,
+                                "check_runs": [{
+                                    "id": 1,
+                                    "head_sha": "deadbeef",
+                                    "status": "completed",
+                                    "conclusion": "neutral",
+                                    "started_at": "2018-05-04T01:14:52Z",
+                                    "completed_at": "2018-05-04T01:14:52Z"}]}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/commits",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `[
+					  {
+						"sha": "2",
+						"parents": [
+						  {
+							"sha": "1"
+						  }
+						],
+                        "commit": {
+                            "message": "Signed-off-by: test"
+                        }
+					  }
+					]`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/check-runs/1",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `{
+			            "id": 1,
+                        "name":"DeveloperCertificateOfOrigin",
+						"status": "completed",
+						"conclusion": "failed",
+						"started_at": "2018-05-04T01:14:52Z",
+						"completed_at": "2018-05-04T01:14:52Z",
+                        "output":{
+                            "title": "Mighty test report",
+							"summary":"There are 0 failures, 2 warnings and 1 notice",
+							"text":"You may have misspelled some words."
+                        }
+                }`)
+			},
+		)
+		err := dcoCheck(ctx, cfg, mClient, e)
+		assert.Equal(t, nil, err)
 	})
 }

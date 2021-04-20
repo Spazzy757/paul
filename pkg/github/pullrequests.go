@@ -44,6 +44,10 @@ func PullRequestHandler(
 		return err
 	}
 	err = limitPRCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
+	err = dcoCheck(ctx, cfg, client, event)
 	return err
 }
 
@@ -141,6 +145,34 @@ func limitPRCheck(
 		err = closePullRequest(ctx, client, event)
 	}
 	return err
+}
+
+//dcoCheck
+func dcoCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.PullRequests.DCOCheck {
+		check, err := createSuccessfulCheck(ctx, event, client)
+		if err != nil {
+			return err
+		}
+		commits, err := getPullRequestCommits(ctx, event, client)
+		if err != nil {
+			return err
+		}
+		anonymousSign := hasAnonymousSign(commits)
+		unsignedCommits := hasUnsigned(commits)
+		if unsignedCommits || anonymousSign {
+			err = updateExistingDCOCheck(ctx, client, event, check, failed)
+		} else {
+			err = updateExistingDCOCheck(ctx, client, event, check, success)
+		}
+		return err
+	}
+	return nil
 }
 
 //reviewComment sends a review comment to a Pull Request

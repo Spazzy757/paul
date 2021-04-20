@@ -98,6 +98,55 @@ func TestIncomingWebhook(t *testing.T) {
 				assert.Equal(t, r.Method, "DELETE")
 			},
 		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/commits/83e12d84247dcc85e05ea18d558be01ce6b0c128/check-runs",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `{"total_count":1,
+                                "check_runs": [{
+                                    "id": 1,
+                                    "head_sha": "deadbeef",
+                                    "status": "completed",
+                                    "conclusion": "neutral",
+                                    "started_at": "2018-05-04T01:14:52Z",
+                                    "completed_at": "2018-05-04T01:14:52Z"}]}`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/check-runs/1",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `{
+			            "id": 1,
+                        "name":"DeveloperCertificateOfOrigin",
+						"status": "completed",
+						"conclusion": "failed",
+						"started_at": "2018-05-04T01:14:52Z",
+						"completed_at": "2018-05-04T01:14:52Z",
+                        "output":{
+                            "title": "Mighty test report",
+							"summary":"There are 0 failures, 2 warnings and 1 notice",
+							"text":"You may have misspelled some words."
+                        }
+                }`)
+			},
+		)
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/1/commits",
+			func(w http.ResponseWriter, r *http.Request) {
+				fmt.Fprint(w, `[
+					  {
+						"sha": "2",
+						"parents": [
+						  {
+							"sha": "1"
+						  }
+						],
+                        "commit": {
+                            "message": "Signed-off-by: test"
+                        }
+					  }
+					]`)
+			},
+		)
 
 		webhookPayload := getIssueCommentMockPayload("merged-pr")
 		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))

@@ -47,6 +47,10 @@ func PullRequestHandler(
 	if err != nil {
 		return err
 	}
+	err = copyIssueLabels(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
 	err = dcoCheck(ctx, cfg, client, event)
 	return err
 }
@@ -175,6 +179,17 @@ func dcoCheck(
 	return nil
 }
 
+//copyIssueLabels
+func copyIssueLabels(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+
+) error {
+	return nil
+}
+
 //reviewComment sends a review comment to a Pull Request
 func reviewComment(
 	ctx context.Context,
@@ -270,3 +285,5 @@ func mergePullRequest(
 	)
 	return err
 }
+
+//

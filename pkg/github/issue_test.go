@@ -561,7 +561,7 @@ func TestHandleGif(t *testing.T) {
 
 		input := &github.IssueComment{
 			Body: github.String(
-				"![giphy](https://media1.giphy.com/media/iXQ8SgaMQAgtq/200.gif?cid=479f44c89j1oe6ka1wdran4m31ljfqx6scvrqbcj08ly81iq&rid=200.gif)",
+				"![giphy](https://media1.giphy.com/media/iXQ8SgaMQAgtq/200.gif?cid=479f44c89j1oe6ka1wdran4m31ljfqx6scvrqbcj08ly81iq&rid=200.gif)\n![giphy watermark](https://raw.githubusercontent.com/Spazzy757/paul/main/web/src/assets/giphy-watermark.png)",
 			),
 		}
 

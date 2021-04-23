@@ -163,7 +163,7 @@ func giphyHandler(
 	if err != nil {
 		return err
 	}
-	message := fmt.Sprintf("![giphy](%v)", gifUrl)
+	message := fmt.Sprintf("![giphy](%v)\n![giphy watermark](https://raw.githubusercontent.com/Spazzy757/paul/main/web/src/assets/giphy-watermark.png)", gifUrl)
 	err = createIssueComment(ctx, is, client, message)
 	return err
 }

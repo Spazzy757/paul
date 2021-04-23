@@ -10,6 +10,7 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -20,15 +21,16 @@ const (
 
 func TestGetPaulConfig(t *testing.T) {
 	t.Run("Test Read Paul Config Returns Valid Paul Config", func(t *testing.T) {
+		assertions := require.New(t)
 		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
-		assert.Equal(t, nil, err)
+		assertions.NoError(err)
 
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/contents/",
 			func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, r.Method, "GET")
+				assertions.Equal(r.Method, "GET")
 				fmt.Fprint(w, `[{
 		            "type": "file",
 		            "name": "PAUL.yaml",
@@ -37,7 +39,7 @@ func TestGetPaulConfig(t *testing.T) {
 			},
 		)
 		mux.HandleFunc("/download/PAUL.yaml", func(w http.ResponseWriter, r *http.Request) {
-			assert.Equal(t, r.Method, "GET")
+			assertions.Equal(r.Method, "GET")
 			fmt.Fprint(w, string(yamlFile))
 		})
 
@@ -49,21 +51,22 @@ func TestGetPaulConfig(t *testing.T) {
 			"main",
 			mClient,
 		)
-		assert.Equal(t, nil, err)
-		assert.NotEqual(t, "", cfg.PullRequests.OpenMessage)
-		assert.NotEqual(t, cfg.PullRequests.CatsEnabled, false)
-		assert.NotEqual(t, cfg.PullRequests.DogsEnabled, false)
+		assertions.NoError(err)
+		assertions.NotEqual("", cfg.PullRequests.OpenMessage)
+		assertions.NotEqual(cfg.PullRequests.CatsEnabled, false)
+		assertions.NotEqual(cfg.PullRequests.DogsEnabled, false)
 	})
 	t.Run("Test Read Paul Config Returns Valid Paul Config if its in .github directory", func(t *testing.T) {
+		assertions := require.New(t)
 		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
-		assert.Equal(t, nil, err)
+		assertions.NoError(err)
 
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/contents/.github",
 			func(w http.ResponseWriter, r *http.Request) {
-				assert.Equal(t, r.Method, "GET")
+				assertions.Equal(r.Method, "GET")
 				fmt.Fprint(w, `[{
 		            "type": "dir",
 		            "name": ".github",
@@ -90,12 +93,13 @@ func TestGetPaulConfig(t *testing.T) {
 			"main",
 			mClient,
 		)
-		assert.Equal(t, nil, err)
-		assert.NotEqual(t, "", cfg.PullRequests.OpenMessage)
-		assert.NotEqual(t, cfg.PullRequests.CatsEnabled, false)
-		assert.NotEqual(t, cfg.PullRequests.DogsEnabled, false)
+		assertions.NoError(err)
+		assertions.NotEqual("", cfg.PullRequests.OpenMessage)
+		assertions.NotEqual(cfg.PullRequests.CatsEnabled, false)
+		assertions.NotEqual(cfg.PullRequests.DogsEnabled, false)
 	})
-	t.Run("Test Read Paul Error Returns an Empty Config", func(t *testing.T) {
+	t.Run("Test Read Paul Error Returns an Empty Config but No Error", func(t *testing.T) {
+		assertions := require.New(t)
 		mClient, _, _, teardown := test.GetMockClient()
 		defer teardown()
 
@@ -107,9 +111,40 @@ func TestGetPaulConfig(t *testing.T) {
 			"main",
 			mClient,
 		)
-		assert.NotEqual(t, nil, err)
-		assert.Equal(t, "", cfg.PullRequests.OpenMessage)
-		assert.Equal(t, cfg.PullRequests.CatsEnabled, false)
-		assert.Equal(t, cfg.PullRequests.DogsEnabled, false)
+		assertions.NoError(err)
+		assertions.Equal("", cfg.PullRequests.OpenMessage)
+		assertions.Equal(cfg.PullRequests.CatsEnabled, false)
+		assertions.Equal(cfg.PullRequests.DogsEnabled, false)
+	})
+	t.Run("Test Read Paul Error Returns an Empty Config with Error", func(t *testing.T) {
+		assertions := require.New(t)
+		mClient, mux, serverURL, teardown := test.GetMockClient()
+		defer teardown()
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/contents/",
+			func(w http.ResponseWriter, r *http.Request) {
+				assertions.Equal(r.Method, "GET")
+				w.WriteHeader(http.StatusInternalServerError)
+				fmt.Fprint(w, `[{
+		            "type": "file",
+		            "name": "PAUL.yaml",
+		            "download_url": "`+serverURL+baseURLPath+`/download/PAUL.yaml"
+		        }]`)
+			},
+		)
+
+		owner := "Spazzy757"
+		repo := "paul"
+		cfg, err := GetPaulConfig(
+			context.Background(),
+			owner, repo,
+			"main",
+			mClient,
+		)
+		assertions.Error(err)
+		assertions.Equal("", cfg.PullRequests.OpenMessage)
+		assertions.Equal(cfg.PullRequests.CatsEnabled, false)
+		assertions.Equal(cfg.PullRequests.DogsEnabled, false)
 	})
 }

@@ -19,34 +19,39 @@ func GetPaulConfig(
 	client *github.Client,
 ) (types.PaulConfig, error) {
 	var paulCfg types.PaulConfig
-
-	response, _, err := client.Repositories.DownloadContents(
+	reader, resp, err := client.Repositories.DownloadContents(
 		ctx,
 		owner,
 		repo,
-		configFile,
+		filepath.Join(".github", configFile),
 		&github.RepositoryContentGetOptions{
 			Ref: defaultBranch,
 		},
 	)
-	if err != nil {
-		// If there is a failure look in the .github directory
-		response, _, err = client.Repositories.DownloadContents(
+	// If 404 check in the root directory
+	if resp.StatusCode == 404 {
+		reader, resp, err = client.Repositories.DownloadContents(
 			ctx,
 			owner,
 			repo,
-			filepath.Join(".github", configFile),
+			configFile,
 			&github.RepositoryContentGetOptions{
 				Ref: defaultBranch,
 			},
 		)
-		if err != nil {
-			return paulCfg, fmt.Errorf("unable to download config file: %s", err)
+		// If still not found then return empty config
+		// but not error
+		if resp.StatusCode == 404 {
+			return paulCfg, nil
 		}
 	}
-	defer response.Close()
+	if err != nil {
+		return paulCfg, fmt.Errorf("unable to download config file: %s", err)
 
-	bytesConfig, err := ioutil.ReadAll(response)
+	}
+	defer reader.Close()
+
+	bytesConfig, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return paulCfg, fmt.Errorf("unable to read github's response: %s", err)
 	}

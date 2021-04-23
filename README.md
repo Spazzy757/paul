@@ -2,6 +2,8 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/Spazzy757/paul)](https://goreportcard.com/report/github.com/Spazzy757/paul)
 [![codecov](https://codecov.io/gh/Spazzy757/paul/branch/main/graph/badge.svg)](https://codecov.io/gh/Spazzy757/paul)
+[![CICD](https://github.com/Spazzy757/paul/actions/workflows/main.yml/badge.svg)](https://github.com/Spazzy757/paul/actions/workflows/main.yml)
+[![CodeQL](https://github.com/Spazzy757/paul/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/Spazzy757/paul/actions/workflows/codeql-analysis.yml)
 
 A Github Bot that has a love for furry things and will help with day to day tasks
 

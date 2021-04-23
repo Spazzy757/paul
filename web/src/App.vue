@@ -14,6 +14,19 @@
       <v-spacer></v-spacer>
 
       <v-btn
+        href=""
+        target="_blank"
+        text
+      >
+          <span class="mr-2">
+              <v-img
+                  :src="require('./assets/giphy-watermark.png')"
+                  class="mr-2"
+                  contain
+              />
+          </span>
+      </v-btn>
+      <v-btn
         href="https://github.com/Spazzy757/paul"
         target="_blank"
         text

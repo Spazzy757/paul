@@ -45,8 +45,10 @@ func GetPaulConfig(
 			return paulCfg, nil
 		}
 	}
+	// Any error from downloading return empty config
+	// This means the file cant be found or paul does not have access
 	if err != nil {
-		return paulCfg, fmt.Errorf("unable to download config file: %s", err)
+		return paulCfg, nil
 
 	}
 	defer reader.Close()

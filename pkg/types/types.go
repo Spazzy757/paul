@@ -21,15 +21,16 @@ type EmptyDescriptionCheck struct {
 
 //PullRequests struct
 type PullRequests struct {
-	OpenMessage       string            `yaml:"open_message,omitempty"`
-	AllowApproval     bool              `yaml:"allow_approval,omitempty"`
-	StaleTime         int               `yaml:"stale_time,omitempty"`
-	CatsEnabled       bool              `yaml:"cats_enabled,omitempty"`
-	DogsEnabled       bool              `yaml:"dogs_enabled,omitempty"`
-	GiphyEnabled      bool              `yaml:"giphy_enabled,omitempty"`
-	AutomatedMerge    bool              `yaml:"automated_merge"`
-	LimitPullRequests LimitPullRequests `yaml:"limit_pull_requests,omitempty"`
-	DCOCheck          bool              `yaml:"dco_check,omitempty"`
+	OpenMessage         string            `yaml:"open_message,omitempty"`
+	AllowApproval       bool              `yaml:"allow_approval,omitempty"`
+	StaleTime           int               `yaml:"stale_time,omitempty"`
+	CatsEnabled         bool              `yaml:"cats_enabled,omitempty"`
+	DogsEnabled         bool              `yaml:"dogs_enabled,omitempty"`
+	GiphyEnabled        bool              `yaml:"giphy_enabled,omitempty"`
+	AutomatedMerge      bool              `yaml:"automated_merge"`
+	LimitPullRequests   LimitPullRequests `yaml:"limit_pull_requests,omitempty"`
+	DCOCheck            bool              `yaml:"dco_check,omitempty"`
+	VerifiedCommitCheck bool              `yaml:"verified_commit_check,omitempty"`
 }
 
 //LimitPullRequests struct

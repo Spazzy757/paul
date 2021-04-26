@@ -53,6 +53,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - DCOCheckEnabled", func(t *testing.T) {
 		assert.Equal(t, true, paulConfig.PullRequests.DCOCheck)
 	})
+	t.Run("Test Loading Config - VerifiedCommitCheckEnabled", func(t *testing.T) {
+		assert.Equal(t, true, paulConfig.PullRequests.VerifiedCommitCheck)
+	})
 }
 
 func TestLoadConfigFails(t *testing.T) {

@@ -15,7 +15,8 @@ const (
 	dco      = "Developer Certificate Of Origin"
 	verified = "Commits Are Verified"
 	success  = "success"
-	started  = "neutral"
+	started  = "in_progress"
+	neutral  = "neutral"
 	failed   = "action_required"
 )
 
@@ -73,7 +74,7 @@ func createDCOCheck(
 			Summary: &summary,
 		},
 	}
-	conclusion := started
+	conclusion := neutral
 	check.Conclusion = &conclusion
 	check.CompletedAt = &now
 	return check
@@ -98,7 +99,7 @@ func createVerifyCheck(
 			Summary: &summary,
 		},
 	}
-	conclusion := started
+	conclusion := neutral
 	check.Conclusion = &conclusion
 	check.CompletedAt = &now
 	return check

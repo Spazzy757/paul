@@ -116,7 +116,7 @@ func TestGetPaulConfig(t *testing.T) {
 		assertions.Equal(cfg.PullRequests.CatsEnabled, false)
 		assertions.Equal(cfg.PullRequests.DogsEnabled, false)
 	})
-	t.Run("Test Read Paul Error Returns an Empty Config with Error", func(t *testing.T) {
+	t.Run("Test Read Paul Error Returns an Empty Config with no Error", func(t *testing.T) {
 		assertions := require.New(t)
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
@@ -142,7 +142,7 @@ func TestGetPaulConfig(t *testing.T) {
 			"main",
 			mClient,
 		)
-		assertions.Error(err)
+		assertions.NoError(err)
 		assertions.Equal("", cfg.PullRequests.OpenMessage)
 		assertions.Equal(cfg.PullRequests.CatsEnabled, false)
 		assertions.Equal(cfg.PullRequests.DogsEnabled, false)

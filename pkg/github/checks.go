@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	dco     = "DeveloperCertificateOfOrigin"
-	success = "success"
-	started = "in_progress"
-	failed  = "action_required"
+	dco      = "Developer Certificate Of Origin"
+	verified = "Commits Are Verified"
+	success  = "success"
+	started  = "in_progress"
+	failed   = "action_required"
 )
 
 var isAnonymousSignature = regexp.MustCompile("Signed-off-by:(.*)noreply.github.com")
@@ -72,7 +73,32 @@ func createDCOCheck(
 			Summary: &summary,
 		},
 	}
-	conclusion := success
+	conclusion := started
+	check.Conclusion = &conclusion
+	check.CompletedAt = &now
+	return check
+}
+
+func createVerifyCheck(
+	event *github.PullRequestEvent,
+) github.CreateCheckRunOptions {
+	now := github.Timestamp{Time: time.Now()}
+	status := started
+	text := "Checking All Commits Are Verified"
+	title := "Verified Commits"
+	summary := "Checking Commits Are Verified"
+	check := github.CreateCheckRunOptions{
+		StartedAt: &now,
+		Name:      verified,
+		HeadSHA:   event.PullRequest.Head.GetSHA(),
+		Status:    &status,
+		Output: &github.CheckRunOutput{
+			Text:    &text,
+			Title:   &title,
+			Summary: &summary,
+		},
+	}
+	conclusion := started
 	check.Conclusion = &conclusion
 	check.CompletedAt = &now
 	return check
@@ -100,11 +126,55 @@ func updateUnsuccessfulDCOCheck(
 	return checkOpt
 }
 
+func updateUnsuccessfulVerifyCheck(
+	check *github.CheckRun,
+) github.UpdateCheckRunOptions {
+	now := github.Timestamp{Time: time.Now()}
+	text := `Thank you for your contribution, please make sure all commits are verified`
+	title := "Unverified commits"
+	summary := "One or more of the commits in this Pull Request are not verified"
+
+	checkOpt := github.UpdateCheckRunOptions{
+		Name: check.GetName(),
+		Output: &github.CheckRunOutput{
+			Text:    &text,
+			Title:   &title,
+			Summary: &summary,
+		},
+	}
+	conclusion := failed
+	checkOpt.Conclusion = &conclusion
+	checkOpt.CompletedAt = &now
+	return checkOpt
+}
+
+func updateSuccessfulVerifyCheck(
+	check *github.CheckRun,
+) github.UpdateCheckRunOptions {
+	now := github.Timestamp{Time: time.Now()}
+	text := `All commits are verified`
+	title := "Commits Verified"
+	summary := "One or more of the commits in this Pull Request are not verified"
+
+	checkOpt := github.UpdateCheckRunOptions{
+		Name: check.GetName(),
+		Output: &github.CheckRunOutput{
+			Text:    &text,
+			Title:   &title,
+			Summary: &summary,
+		},
+	}
+	conclusion := success
+	checkOpt.Conclusion = &conclusion
+	checkOpt.CompletedAt = &now
+	return checkOpt
+}
+
 func updateSuccessfulDCOCheck(
 	check *github.CheckRun,
 ) github.UpdateCheckRunOptions {
 	now := github.Timestamp{Time: time.Now()}
-	text := "Thank you for the contribution, everything looks fine."
+	text := "Thank your for the contribution, everything looks fine."
 	title := "Signed commits"
 	summary := "All of your commits are signed"
 
@@ -126,9 +196,9 @@ func getExistingDCOCheck(
 	ctx context.Context,
 	event *github.PullRequestEvent,
 	client *github.Client,
+	checkName string,
 ) (*github.ListCheckRunsResults, error) {
 	pr := event.PullRequest
-	checkName := dco
 	checks, res, err := client.Checks.ListCheckRunsForRef(ctx,
 		pr.Base.Repo.Owner.GetLogin(),
 		pr.Base.Repo.GetName(),
@@ -144,12 +214,12 @@ func getExistingDCOCheck(
 	return checks, err
 }
 
-func createSuccessfulCheck(
+func createSuccessfulDCOCheck(
 	ctx context.Context,
 	event *github.PullRequestEvent,
 	client *github.Client,
 ) (*github.CheckRun, error) {
-	checks, err := getExistingDCOCheck(ctx, event, client)
+	checks, err := getExistingDCOCheck(ctx, event, client, dco)
 	if err != nil {
 		return &github.CheckRun{}, err
 	}
@@ -172,6 +242,38 @@ func createSuccessfulCheck(
 	}
 	if res.StatusCode != 201 {
 		return check, fmt.Errorf("DCO check unexpected status code: %d", res.StatusCode)
+	}
+	return check, nil
+}
+
+func createSuccessfulVerifyCheck(
+	ctx context.Context,
+	event *github.PullRequestEvent,
+	client *github.Client,
+) (*github.CheckRun, error) {
+	checks, err := getExistingDCOCheck(ctx, event, client, verified)
+	if err != nil {
+		return &github.CheckRun{}, err
+	}
+	if checks.GetTotal() > 1 {
+		return &github.CheckRun{}, fmt.Errorf("Error unexpected count of existing Verified Commit checks: %d", *checks.Total)
+	}
+	if checks.GetTotal() == 1 {
+		return checks.CheckRuns[0], nil
+	}
+	pr := event.PullRequest
+	newCheck := createVerifyCheck(event)
+	check, res, err := client.Checks.CreateCheckRun(
+		ctx,
+		pr.Base.Repo.Owner.GetLogin(),
+		pr.Base.Repo.GetName(),
+		newCheck,
+	)
+	if err != nil {
+		return check, err
+	}
+	if res.StatusCode != 201 {
+		return check, fmt.Errorf("Verified commit check unexpected status code: %d", res.StatusCode)
 	}
 	return check, nil
 }
@@ -211,6 +313,41 @@ func updateExistingDCOCheck(
 	return nil
 }
 
+func updateExistingVerifyCheck(
+	ctx context.Context,
+	client *github.Client,
+	event *github.PullRequestEvent,
+	check *github.CheckRun,
+	conclusion string,
+) error {
+	var checkOpts github.UpdateCheckRunOptions
+
+	if conclusion == success {
+		checkOpts = updateSuccessfulVerifyCheck(check)
+	} else if conclusion == failed {
+		checkOpts = updateUnsuccessfulVerifyCheck(check)
+	}
+
+	pr := event.PullRequest
+	_, resp, err := client.Checks.UpdateCheckRun(
+		ctx,
+		pr.Base.Repo.Owner.GetLogin(),
+		pr.Base.Repo.GetName(),
+		check.GetID(),
+		checkOpts,
+	)
+	if resp.StatusCode != 200 {
+		return fmt.Errorf(
+			"Error while updating the DCO check unexpected status code: %d",
+			resp.StatusCode,
+		)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func hasUnsigned(commits []*github.RepositoryCommit) bool {
 	for _, commit := range commits {
 		if commit.Commit != nil && commit.Commit.Message != nil {
@@ -220,8 +357,21 @@ func hasUnsigned(commits []*github.RepositoryCommit) bool {
 	return false
 }
 
+func hasUnverified(commits []*github.RepositoryCommit) bool {
+	for _, commit := range commits {
+		if commit.Commit != nil && commit.Commit.Verification != nil {
+			return !isVerified(*commit.Commit.Verification)
+		}
+	}
+	return false
+}
+
 func isSigned(msg string) bool {
 	return strings.Contains(msg, "Signed-off-by:")
+}
+
+func isVerified(verification github.SignatureVerification) bool {
+	return verification.GetVerified()
 }
 
 func hasAnonymousSign(commits []*github.RepositoryCommit) bool {

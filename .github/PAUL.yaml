@@ -16,6 +16,8 @@ branch_destroyer:
 pull_requests:
   # Enables DCO check on commits
   dco_check: true
+  # Enables Verified Commits check on commits
+  verified_commit_check: true
   # Specifies whether to allow for automated merging of Pull Requests
   automated_merge: true
   # Paul will mark a pull request as "stale" if a Pull Request is not updated for this amount of days

@@ -47,6 +47,10 @@ func PullRequestHandler(
 	if err != nil {
 		return err
 	}
+	err = verifiedCommitCheck(ctx, cfg, client, event)
+	if err != nil {
+		return err
+	}
 	err = dcoCheck(ctx, cfg, client, event)
 	return err
 }
@@ -155,7 +159,7 @@ func dcoCheck(
 	event *github.PullRequestEvent,
 ) error {
 	if cfg.PullRequests.DCOCheck {
-		check, err := createSuccessfulCheck(ctx, event, client)
+		check, err := createSuccessfulDCOCheck(ctx, event, client)
 		if err != nil {
 			return err
 		}
@@ -169,6 +173,33 @@ func dcoCheck(
 			err = updateExistingDCOCheck(ctx, client, event, check, failed)
 		} else {
 			err = updateExistingDCOCheck(ctx, client, event, check, success)
+		}
+		return err
+	}
+	return nil
+}
+
+//verifiedCommitCheck
+func verifiedCommitCheck(
+	ctx context.Context,
+	cfg types.PaulConfig,
+	client *github.Client,
+	event *github.PullRequestEvent,
+) error {
+	if cfg.PullRequests.VerifiedCommitCheck {
+		check, err := createSuccessfulVerifyCheck(ctx, event, client)
+		if err != nil {
+			return err
+		}
+		commits, err := getPullRequestCommits(ctx, event, client)
+		if err != nil {
+			return err
+		}
+		unverifiedCommits := hasUnverified(commits)
+		if unverifiedCommits {
+			err = updateExistingVerifyCheck(ctx, client, event, check, failed)
+		} else {
+			err = updateExistingVerifyCheck(ctx, client, event, check, success)
 		}
 		return err
 	}

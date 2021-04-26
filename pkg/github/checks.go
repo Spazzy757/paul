@@ -16,6 +16,7 @@ const (
 	verified = "Commits Are Verified"
 	success  = "success"
 	started  = "in_progress"
+	neutral  = "neutral"
 	failed   = "action_required"
 )
 
@@ -60,7 +61,7 @@ func createDCOCheck(
 	now := github.Timestamp{Time: time.Now()}
 	status := started
 	text := "Checking Developer Certificate of Origin"
-	title := "Developer Certificate of Origin"
+	title := "In Progress - Developer Certificate of Origin"
 	summary := "Checking Commits Are Signed"
 	check := github.CreateCheckRunOptions{
 		StartedAt: &now,
@@ -73,7 +74,7 @@ func createDCOCheck(
 			Summary: &summary,
 		},
 	}
-	conclusion := started
+	conclusion := neutral
 	check.Conclusion = &conclusion
 	check.CompletedAt = &now
 	return check
@@ -85,7 +86,7 @@ func createVerifyCheck(
 	now := github.Timestamp{Time: time.Now()}
 	status := started
 	text := "Checking All Commits Are Verified"
-	title := "Verified Commits"
+	title := "In Progress - Verified Commits"
 	summary := "Checking Commits Are Verified"
 	check := github.CreateCheckRunOptions{
 		StartedAt: &now,
@@ -98,7 +99,7 @@ func createVerifyCheck(
 			Summary: &summary,
 		},
 	}
-	conclusion := started
+	conclusion := neutral
 	check.Conclusion = &conclusion
 	check.CompletedAt = &now
 	return check

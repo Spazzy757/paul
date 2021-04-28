@@ -1217,10 +1217,10 @@
     lodash.kebabcase "^4.1.1"
     svg-tags "^1.0.0"
 
-"@vue/babel-preset-app@^5.0.0-alpha.8":
-  version "5.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@vue/babel-preset-app/-/babel-preset-app-5.0.0-alpha.8.tgz#4b590706e30c2de371223e89a2d3cbaf23559cad"
-  integrity sha512-C9DEtQhb97K1i08r4/GJFf70NRfXSzqlWJu+5DlVRfDIf2UV6GZzKzc5RAjOh5xvql1b6ZZzNwN4Ioc7Vy9U5Q==
+"@vue/babel-preset-app@^5.0.0-beta.0":
+  version "5.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@vue/babel-preset-app/-/babel-preset-app-5.0.0-beta.0.tgz#ab6e68c29b86fa1306ffeb649302c088b50ceafb"
+  integrity sha512-5MjRsqIPlSC5EzwPZRKJn1yMXglG1GXERfzJFwQ7W2uaPmBBR5q8iBI3qYJFXMC0U1+R5Lp5h6/qQUaYOVyv7g==
   dependencies:
     "@babel/core" "^7.12.16"
     "@babel/helper-compilation-targets" "^7.12.16"
@@ -1307,14 +1307,14 @@
   resolved "https://registry.yarnpkg.com/@vue/cli-overlay/-/cli-overlay-5.0.0-alpha.8.tgz#225574d6d24374fe9d44f1adf5bd9a10b052c2a8"
   integrity sha512-lxsfUfm2vN0pCrgvZArAxhH3p2yTBThVzcXXYV7Sm21efHYHV68Hpwa3wPf6eIyVT1FtKsRDVLU8Wn1RXIEo6w==
 
-"@vue/cli-plugin-babel@~5.0.0-alpha.8":
-  version "5.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@vue/cli-plugin-babel/-/cli-plugin-babel-5.0.0-alpha.8.tgz#4519a054bfffe0e5a47472f9ccb86c42765832d6"
-  integrity sha512-TwMVWYYQTmO7+wGqy0hZ42cdQMmESzMDccK8fd8U39kFts/4/cq1wCHCbX/sKcU7hVGrMA05c/S1fw885FOH7g==
+"@vue/cli-plugin-babel@~5.0.0-beta.0":
+  version "5.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@vue/cli-plugin-babel/-/cli-plugin-babel-5.0.0-beta.0.tgz#1f85a03c825d65b3733ea344a7993466e1037698"
+  integrity sha512-i+3OGbZxmmn1Q6qW0gFvajDyxtQ0uAhMC9FQr565OA8JGzFurZ/aJOeeEAMiV9WvzRiXLHzSUVH3ZL/LTDH9pQ==
   dependencies:
     "@babel/core" "^7.12.16"
-    "@vue/babel-preset-app" "^5.0.0-alpha.8"
-    "@vue/cli-shared-utils" "^5.0.0-alpha.8"
+    "@vue/babel-preset-app" "^5.0.0-beta.0"
+    "@vue/cli-shared-utils" "^5.0.0-beta.0"
     babel-loader "^8.2.2"
     thread-loader "^3.0.0"
     webpack "^5.22.0"
@@ -1404,10 +1404,10 @@
     webpack-merge "^5.7.3"
     webpack-virtual-modules "^0.4.2"
 
-"@vue/cli-shared-utils@^5.0.0-alpha.8":
-  version "5.0.0-alpha.8"
-  resolved "https://registry.yarnpkg.com/@vue/cli-shared-utils/-/cli-shared-utils-5.0.0-alpha.8.tgz#e1565b7912668174977cfa7e3370ae21699554ea"
-  integrity sha512-mM40O+ULK17nM+XEZJDnNd+lBUriANoTsozNWbJ0q5lJ6Uet5RC8L6J9h0vsMMkhQ3oFWFUCLIV/J48XoxCsFQ==
+"@vue/cli-shared-utils@^5.0.0-alpha.8", "@vue/cli-shared-utils@^5.0.0-beta.0":
+  version "5.0.0-beta.0"
+  resolved "https://registry.yarnpkg.com/@vue/cli-shared-utils/-/cli-shared-utils-5.0.0-beta.0.tgz#a8851ff3b6cc6923623b0cc29ff4eb29d51a40f5"
+  integrity sha512-g3xLuNyee8d5JTFaJd4WmfA0WXNRpbW7IPPqLfSK9POJQFqwb+pQ7723Iw4okCvfApTeVDJnZQ3RaNzhv08lwg==
   dependencies:
     chalk "^4.1.0"
     execa "^1.0.0"

@@ -13,7 +13,7 @@
     "vuetify": "^2.4.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.16",
+    "@babel/core": "^7.13.16",
     "@babel/eslint-parser": "^7.12.16",
     "@vue/cli-plugin-babel": "~5.0.0-alpha.8",
     "@vue/cli-plugin-eslint": "~5.0.0-alpha.8",

@@ -17,7 +17,7 @@
     "@babel/eslint-parser": "^7.12.16",
     "@vue/cli-plugin-babel": "~5.0.0-alpha.8",
     "@vue/cli-plugin-eslint": "~5.0.0-alpha.8",
-    "@vue/cli-service": "~5.0.0-alpha.8",
+    "@vue/cli-service": "~5.0.0-beta.0",
     "eslint": "^7.20.0",
     "eslint-plugin-vue": "^7.6.0",
     "sass": "^1.32.0",

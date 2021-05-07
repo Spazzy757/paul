@@ -15,8 +15,9 @@ type PaulConfig struct {
 
 //EmptyDescriptionCheck config for empty PR checks
 type EmptyDescriptionCheck struct {
-	Enabled  bool `yaml:"enabled,omitempty"`
-	Enforced bool `yaml:"enforced,omitempty"`
+	Enabled  bool   `yaml:"enabled,omitempty"`
+	Enforced bool   `yaml:"enforced,omitempty"`
+	Message  string `yaml:"message,omitempty"`
 }
 
 //PullRequests struct

@@ -86,11 +86,15 @@ func emptyDescriptionCheck(
 	if cfg.EmptyDescriptionCheck.Enabled &&
 		event.GetAction() == "opened" &&
 		event.PullRequest.GetBody() == "" {
+		message := emptyDescriptionMessage
+		if cfg.EmptyDescriptionCheck.Message != "" {
+			message = cfg.EmptyDescriptionCheck.Message
+		}
 		err := reviewComment(
 			ctx,
 			event.GetPullRequest(),
 			client,
-			emptyDescriptionMessage,
+			message,
 		)
 		if cfg.EmptyDescriptionCheck.Enforced {
 			err = closePullRequest(ctx, client, event)

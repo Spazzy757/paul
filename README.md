@@ -37,6 +37,9 @@ Other Functions:
 - Empty Pull Requests: Does not allow Empty Descriptions, two levels, enforced means Paul will close the Pull Request with a message, without enforced Paul will just send a review saying to add a description
 - Label Stale Pull Requests: This setting will mark Pull Requests stale if they have not been updated within the specified days
 - Automated Merging of Pull Requests: Any pull request labeled with `merge` will be automatically merged every hour if they are mergeable. This means that you can mark a Pull Requests as mergeable before all required checks have passed and once they have passed Paul will merge the Pull Request
+- Developer Certificate of Origin: This checks if all commits in a pull request are signed off see [the spec](https://developercertificate.org/) for more information
+- Verified Commits: A simple check that makes sure that all commits are
+  verified see [githubs documentation on verification](https://docs.github.com/en/github/authenticating-to-github/about-commit-signature-verification)
 
 ## Configuration
 
@@ -59,6 +62,10 @@ branch_destroyer:
   protected_branches:
     - main
 pull_requests:
+  # Enables DCO check on commits
+  dco_check: true
+  # Enables Verified Commits check on commits
+  verified_commit_check: true
   # The Setting to enable automaed merges
   automated_merge: true
   # The time in days after a PR should be labeled inactive

@@ -240,7 +240,9 @@ func TestAssignCommand(t *testing.T) {
 			Maintainers: []string{
 				"Spazzy757",
 			},
-			Labels: true,
+			PullRequests: types.PullRequests{
+				Assign: true,
+			},
 		}
 
 		mux.HandleFunc(
@@ -270,7 +272,9 @@ func TestAssignCommand(t *testing.T) {
 			Maintainers: []string{
 				"Test",
 			},
-			Labels: true,
+			PullRequests: types.PullRequests{
+				Assign: true,
+			},
 		}
 
 		mux.HandleFunc(

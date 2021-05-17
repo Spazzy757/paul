@@ -23,6 +23,7 @@ type EmptyDescriptionCheck struct {
 type PullRequests struct {
 	OpenMessage         string            `yaml:"open_message,omitempty"`
 	AllowApproval       bool              `yaml:"allow_approval,omitempty"`
+	Assign              bool              `yaml:"assign,omitempty"`
 	StaleTime           int               `yaml:"stale_time,omitempty"`
 	CatsEnabled         bool              `yaml:"cats_enabled,omitempty"`
 	DogsEnabled         bool              `yaml:"dogs_enabled,omitempty"`

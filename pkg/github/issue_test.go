@@ -16,6 +16,7 @@ import (
 	"github.com/Spazzy757/paul/pkg/types"
 	"github.com/google/go-github/v35/github"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func getIssueCommentMockPayload(payloadType string) []byte {
@@ -226,6 +227,67 @@ func TestHandleLabels(t *testing.T) {
 		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
 		e := event.(*github.IssueCommentEvent)
 		err := labelHandler(context.Background(), cfg, e, mClient, input)
+		assert.Equal(t, nil, err)
+	})
+}
+
+func TestAssignCommand(t *testing.T) {
+	t.Run("Test Assign Command", func(t *testing.T) {
+		assertions := require.New(t)
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := &types.PaulConfig{
+			Maintainers: []string{
+				"Spazzy757",
+			},
+			Labels: true,
+		}
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/9/requested_reviewers",
+			func(w http.ResponseWriter, r *http.Request) {
+				body, _ := ioutil.ReadAll(r.Body)
+				assertions.Equal(string(body), `{"reviewers":["Spazzy757"]}`+"\n")
+				fmt.Fprint(w, `{"number":9}`)
+			},
+		)
+		// Just needed to get the right event type
+		webhookPayload := getIssueCommentMockPayload("assign-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := assignHandler(context.Background(), cfg, e, mClient, []string{"Spazzy757"})
+
+		assert.Equal(t, nil, err)
+	})
+	t.Run("Test Assign Command not Maintainer", func(t *testing.T) {
+		assertions := require.New(t)
+		mClient, mux, _, teardown := test.GetMockClient()
+		defer teardown()
+		cfg := &types.PaulConfig{
+			Maintainers: []string{
+				"Test",
+			},
+			Labels: true,
+		}
+
+		mux.HandleFunc(
+			"/repos/Spazzy757/paul/pulls/9/requested_reviewers",
+			func(w http.ResponseWriter, r *http.Request) {
+				assertions.Fail("reviwers should not be added")
+			},
+		)
+		// Just needed to get the right event type
+		webhookPayload := getIssueCommentMockPayload("assign-command")
+		req, _ := http.NewRequest("POST", "/", bytes.NewBuffer(webhookPayload))
+		req.Header.Set("X-GitHub-Event", "issue_comment")
+
+		event, _ := github.ParseWebHook(github.WebHookType(req), webhookPayload)
+		e := event.(*github.IssueCommentEvent)
+		err := assignHandler(context.Background(), cfg, e, mClient, []string{"Spazzy757"})
+
 		assert.Equal(t, nil, err)
 	})
 }

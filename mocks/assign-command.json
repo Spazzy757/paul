@@ -1,0 +1,87 @@
+{
+    "action": "created",
+    "issue": {
+        "id": 111111,
+        "node_id": "dGVzdAo=",
+        "number": 9,
+        "title": "Cleaned up dockerfile",
+        "user": {
+            "login": "Spazzy757",
+            "id": 111111,
+            "node_id": "dGVzdAo=",
+            "type": "User",
+            "site_admin": false
+        },
+        "state": "open",
+        "locked": false,
+        "milestone": null,
+        "closed_at": null,
+        "author_association": "OWNER",
+        "active_lock_reason": null,
+        "pull_request": {},
+        "body": "",
+        "performed_via_github_app": null
+    },
+    "comment": {
+        "id": 111111,
+        "node_id": "dGVzdAo=",
+        "user": {
+            "login": "Spazzy757",
+            "id": 111111,
+            "node_id": "dGVzdAo=",
+            "gravatar_id": "",
+            "type": "User",
+            "site_admin": false
+        },
+        "author_association": "OWNER",
+        "body": "/assign Spazzy757",
+        "performed_via_github_app": null
+    },
+    "repository": {
+        "id": 111111,
+        "node_id": "dGVzdAo=",
+        "name": "paul",
+        "full_name": "Spazzy757/paul",
+        "private": false,
+        "owner": {
+            "login": "Spazzy757",
+            "id": 111111,
+            "node_id": "",
+            "type": "User",
+            "site_admin": false
+        },
+        "description": "The Alien Github Bot ",
+        "fork": false,
+        "homepage": "",
+        "size": 49,
+        "stargazers_count": 0,
+        "watchers_count": 0,
+        "language": "Go",
+        "has_issues": true,
+        "has_projects": true,
+        "has_downloads": true,
+        "has_wiki": true,
+        "has_pages": false,
+        "forks_count": 0,
+        "mirror_url": null,
+        "archived": false,
+        "disabled": false,
+        "open_issues_count": 5,
+        "license": {},
+        "forks": 0,
+        "open_issues": 5,
+        "watchers": 0,
+        "default_branch": "main"
+    },
+    "sender": {
+        "login": "Spazzy757",
+        "id": 111111,
+        "node_id": "dGVzdAo=",
+        "type": "User",
+        "site_admin": false
+    },
+    "installation": {
+        "id": 12256835,
+        "node_id": "dGVzdAo="
+    }
+}

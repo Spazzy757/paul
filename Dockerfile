@@ -1,7 +1,6 @@
 # builder image
 FROM golang:1.15-buster as builder
 
-
 RUN mkdir /build
 ADD . /build/
 WORKDIR /build
@@ -15,7 +14,6 @@ ENV GITHUB_SECRET_KEY=$SECRET_KEY
 RUN mkdir /secrets
 RUN echo ${GITHUB_PRIVATE_KEY} | base64 -d > /secrets/paul-private-key
 RUN echo ${GITHUB_SECRET_KEY} > /secrets/paul-secret-key
-
 
 FROM node:lts-alpine as web-builder
 RUN mkdir /web

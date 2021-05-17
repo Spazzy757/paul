@@ -56,6 +56,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Run("Test Loading Config - VerifiedCommitCheckEnabled", func(t *testing.T) {
 		assert.Equal(t, true, paulConfig.PullRequests.VerifiedCommitCheck)
 	})
+	t.Run("Test Loading Config - Assign", func(t *testing.T) {
+		assert.Equal(t, true, paulConfig.PullRequests.Assign)
+	})
 }
 
 func TestLoadConfigFails(t *testing.T) {

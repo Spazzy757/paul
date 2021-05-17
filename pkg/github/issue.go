@@ -73,6 +73,9 @@ func IssueCommentHandler(
 		// Case /merge command
 		case cmd == "merge":
 			err = mergeHandler(ctx, &cfg, event, client)
+		// Case /assign command
+		case cmd == "assign":
+			err = assignHandler(ctx, &cfg, event, client, args)
 		default:
 			break
 		}
@@ -148,6 +151,39 @@ func dogsHandler(
 	}
 	message := fmt.Sprintf("Despite how it looks it is well trained\n\n ![loyal soldier](%v)", dog.Url)
 	err = createIssueComment(ctx, is, client, message)
+	return err
+}
+
+// handleCats is the handler for the /cat command
+func assignHandler(
+	ctx context.Context,
+	cfg *types.PaulConfig,
+	event *github.IssueCommentEvent,
+	client *github.Client,
+	reviewers []string,
+) error {
+	var validatedReviwers []string
+	//Loop through reviewers remove @ and check if they are maintainers
+	for _, user := range reviewers {
+		u := strings.Trim(user, "@")
+		if checkStringInList(cfg.Maintainers, u) {
+			validatedReviwers = append(validatedReviwers, u)
+		}
+	}
+	//Add Reviewers to PR
+	var err error
+	if cfg.PullRequests.Assign && checkStringInList(cfg.Maintainers, event.Sender.GetLogin()) {
+		reviewersRequest := github.ReviewersRequest{
+			Reviewers: validatedReviwers,
+		}
+		_, _, err = client.PullRequests.RequestReviewers(
+			ctx,
+			event.Repo.Owner.GetLogin(),
+			event.Repo.GetName(),
+			event.Issue.GetNumber(),
+			reviewersRequest,
+		)
+	}
 	return err
 }
 

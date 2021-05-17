@@ -28,6 +28,7 @@ Commands:
 - `/dog`: Paul will add and image of a dog
 - `/cat`: Paul will add an Image of a cat
 - `/giphy <some description>`: Paul will fetch a giphy that matches the description and add it to the PR/Issue (only single word descriptions are currently supported)
+- `/assign @Spazzy757 @OtherUser`: Paul will add all users that are in the maintainers lists as reviewers
 
 Other Functions:
 
@@ -62,6 +63,8 @@ branch_destroyer:
   protected_branches:
     - main
 pull_requests:
+  # Enableds the /assign command
+  assign: true
   # Enables DCO check on commits
   dco_check: true
   # Enables Verified Commits check on commits

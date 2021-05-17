@@ -310,7 +310,7 @@ func TestPullRequestHandler(t *testing.T) {
 	t.Run("Test Empty Description Prompts a review", func(t *testing.T) {
 
 		input := &github.PullRequestReviewRequest{
-			Body:  github.String(emptyDescriptionMessage),
+			Body:  github.String("There seems to be no description on this Pull Request, please provide a description so I can understand this Pull Requests Context"),
 			Event: github.String("COMMENT"),
 		}
 		mux.HandleFunc(

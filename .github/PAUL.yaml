@@ -6,6 +6,7 @@ labels: true
 empty_description_check:
   enabled: true
   enforced: true
+  message: "There seems to be no description on this Pull Request, please provide a description so I can understand this Pull Requests Context"
 # Settings for branch destroyer
 # branch destroyer will not delete your default branch
 # set other "protected" branches here

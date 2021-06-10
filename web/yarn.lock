@@ -1324,12 +1324,12 @@
     thread-loader "^3.0.0"
     webpack "^5.22.0"
 
-"@vue/cli-plugin-eslint@~5.0.0-beta.1":
-  version "5.0.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@vue/cli-plugin-eslint/-/cli-plugin-eslint-5.0.0-beta.1.tgz#2091192bb4d45125bc01f15c67a048f3e08c4f80"
-  integrity sha512-Ac0bcQSA5o/rLbuic+qQiP8eHzl7zlQm1w/hB5YDLYOxremLDzoliRd/3T4iKxepbpPqaHNVrfzRrYTjEVLGsQ==
+"@vue/cli-plugin-eslint@~5.0.0-beta.2":
+  version "5.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@vue/cli-plugin-eslint/-/cli-plugin-eslint-5.0.0-beta.2.tgz#7325bf9c49badbf792e04ff2e52697102b651602"
+  integrity sha512-qDmvHq1PO4MeII8stAtIcU0PQ3swmE2mN1yTnO4rATdtelkRtpgKGkc+f1TeLiAcGptGigPeFvWpzsovo0qVaA==
   dependencies:
-    "@vue/cli-shared-utils" "^5.0.0-beta.1"
+    "@vue/cli-shared-utils" "^5.0.0-beta.2"
     eslint-webpack-plugin "2.4.3"
     globby "^11.0.2"
     inquirer "^8.0.0"
@@ -1411,10 +1411,10 @@
     webpack-merge "^5.7.3"
     webpack-virtual-modules "^0.4.2"
 
-"@vue/cli-shared-utils@^5.0.0-beta.1":
-  version "5.0.0-beta.1"
-  resolved "https://registry.yarnpkg.com/@vue/cli-shared-utils/-/cli-shared-utils-5.0.0-beta.1.tgz#5bea6b1d403da74c75af8060625b9ce0e873dfba"
-  integrity sha512-p8NnRooQu19C/fFuIXzfDLX89HMqkeFdRg0HB8NX9u/qa14WZ3WO1JcpwnN87iRNuJddNhQ16UMxiMtJigpRzQ==
+"@vue/cli-shared-utils@^5.0.0-beta.1", "@vue/cli-shared-utils@^5.0.0-beta.2":
+  version "5.0.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@vue/cli-shared-utils/-/cli-shared-utils-5.0.0-beta.2.tgz#b7bad21e3b13b5dbb985c07bef14dcbd669d90da"
+  integrity sha512-gYznhuPIsSpX6M0LE6GTOsy/V9xG0qEZoBw9bSCC5/eEg+JOwoBXqDdqOXrTPEc6oc0zjPM3lk9zlwsJQ4cUcg==
   dependencies:
     chalk "^4.1.0"
     execa "^1.0.0"

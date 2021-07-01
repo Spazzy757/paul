@@ -10,7 +10,7 @@ import (
 	paulclient "github.com/Spazzy757/paul/pkg/client"
 	paulgithub "github.com/Spazzy757/paul/pkg/github"
 	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/google/go-github/v35/github"
+	"github.com/google/go-github/v36/github"
 	"github.com/gorilla/mux"
 )
 

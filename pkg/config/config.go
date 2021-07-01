@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v35/github"
+	"github.com/google/go-github/v36/github"
 )
 
 const configFile = "PAUL.yaml"

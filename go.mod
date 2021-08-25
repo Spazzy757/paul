@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/google/go-github/v36 v36.0.0
 	github.com/gorilla/mux v1.8.0
-	github.com/lestrrat-go/jwx v1.2.4
+	github.com/lestrrat-go/jwx v1.2.6
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/sirupsen/logrus v1.8.1

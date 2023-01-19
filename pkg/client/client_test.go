@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,7 +13,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/assert"
@@ -43,8 +42,8 @@ func TestNewConfigValidSecretPathWithApplicationID(t *testing.T) {
 	appIDWant := "321"
 	tmpDir := os.TempDir()
 
-	ioutil.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
-	ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
+	_ = os.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
+	_ = os.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
 
 	defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
 	defer os.RemoveAll(path.Join(tmpDir, "paul-secret-key"))
@@ -82,7 +81,7 @@ func TestGetClient(t *testing.T) {
 	key, err := rsa.GenerateKey(reader, bitSize)
 	assert.Equal(t, err, nil)
 	privateWant := "private"
-	_ = ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(privateWant), 0600)
+	_ = os.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(privateWant), 0600)
 	pemSecretfile, err := os.Create(path.Join(tmpDir, "paul-private-key"))
 	assert.Equal(t, err, nil)
 	defer pemSecretfile.Close()
@@ -122,8 +121,8 @@ func TestGetClient(t *testing.T) {
 		appIDWant := "321"
 		tmpDir := os.TempDir()
 
-		_ = ioutil.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
-		_ = ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
+		_ = os.WriteFile(path.Join(tmpDir, "paul-private-key"), []byte(privateWant), 0600)
+		_ = os.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
 
 		defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
 		defer os.RemoveAll(path.Join(tmpDir, "paul-secret-key"))
@@ -206,7 +205,7 @@ func TestAccessToken(t *testing.T) {
 	secretWant := "secret"
 	appIDWant := "321"
 
-	ioutil.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
+	_ = os.WriteFile(path.Join(tmpDir, "paul-secret-key"), []byte(secretWant), 0600)
 
 	defer os.RemoveAll(path.Join(tmpDir, "paul-private-key"))
 	defer os.RemoveAll(path.Join(tmpDir, "paul-secret-key"))
@@ -256,7 +255,7 @@ func TestMakeAccessTokenForInstallation(t *testing.T) {
 		},
 	)
 
-	signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
+	signingKey, _ := os.ReadFile(path.Join(tmpDir, "privatekey.pem"))
 
 	defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
 	t.Run("Test Getting Token For Installation", func(t *testing.T) {
@@ -316,7 +315,7 @@ func TestGetSignedToken(t *testing.T) {
 
 	defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
 
-	signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
+	signingKey, _ := os.ReadFile(path.Join(tmpDir, "privatekey.pem"))
 	t.Run("Test Getting a Singed Token", func(t *testing.T) {
 		tokenString, err := getSignedToken("123456789", string(signingKey))
 		assert.Equal(t, err, nil)
@@ -354,7 +353,7 @@ func TestGetSignedToken(t *testing.T) {
 
 		defer os.RemoveAll(path.Join(tmpDir, "privatekey.pem"))
 
-		signingKey, _ := ioutil.ReadFile(path.Join(tmpDir, "privatekey.pem"))
+		signingKey, _ := os.ReadFile(path.Join(tmpDir, "privatekey.pem"))
 		_, err = getSignedToken("123456789", string(signingKey))
 		assert.NotEqual(t, err, nil)
 	})

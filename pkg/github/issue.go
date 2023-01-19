@@ -9,7 +9,7 @@ import (
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/gif"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 )
 
 /*
@@ -187,7 +187,7 @@ func assignHandler(
 	return err
 }
 
-//giphyHandler is the handler for the /giphy command
+// giphyHandler is the handler for the /giphy command
 func giphyHandler(
 	ctx context.Context,
 	is *github.IssueCommentEvent,
@@ -204,7 +204,7 @@ func giphyHandler(
 	return err
 }
 
-//labelHandler handles the /label command
+// labelHandler handles the /label command
 func labelHandler(
 	ctx context.Context,
 	cfg *types.PaulConfig,
@@ -226,7 +226,7 @@ func labelHandler(
 	return err
 }
 
-//removeLabelHandler handles the /removelabel command
+// removeLabelHandler handles the /removelabel command
 func removeLabelHandler(
 	ctx context.Context,
 	cfg *types.PaulConfig,
@@ -251,7 +251,7 @@ func removeLabelHandler(
 	return err
 }
 
-//approveHandler approves Pull Requests
+// approveHandler approves Pull Requests
 func approveHandler(
 	ctx context.Context,
 	cfg *types.PaulConfig,

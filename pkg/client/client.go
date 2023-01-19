@@ -8,7 +8,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/lestrrat-go/jwx/jwa"
 	"github.com/lestrrat-go/jwx/jwk"
 	"github.com/lestrrat-go/jwx/jwt"
@@ -48,7 +48,7 @@ type authClient struct {
 	Ctx     context.Context
 }
 
-//GetInstallationClient returns an authorized Github Client for an installation
+// GetInstallationClient returns an authorized Github Client for an installation
 func GetInstallationClient(installationID int64) (*github.Client, error) {
 	ctx := context.Background()
 	cfg, err := newConfig()
@@ -72,7 +72,7 @@ func GetInstallationClient(installationID int64) (*github.Client, error) {
 	return client, err
 }
 
-//GetClient returns an authorized Github Client
+// GetClient returns an authorized Github Client
 func GetClient() (*github.Client, error) {
 	ctx := context.Background()
 	cfg, err := newConfig()
@@ -104,7 +104,7 @@ func newConfig() (config, error) {
 		return config, pathErr
 	}
 
-	secretKeyBytes, readErr := ioutil.ReadFile(path.Join(keyPath, secretKeyFile))
+	secretKeyBytes, readErr := os.ReadFile(path.Join(keyPath, secretKeyFile))
 
 	if readErr != nil {
 		msg := fmt.Errorf("unable to read GitHub symmetrical secret: %s, error: %s",
@@ -117,7 +117,7 @@ func newConfig() (config, error) {
 
 	privateKeyPath := path.Join(keyPath, privateKeyFile)
 
-	keyBytes, err := ioutil.ReadFile(privateKeyPath)
+	keyBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return config, fmt.Errorf("unable to read private key path: %s, error: %s", privateKeyPath, err)
 	}
@@ -151,7 +151,7 @@ func getFirstLine(secret []byte) []byte {
 	return secret
 }
 
-//GetAccessToken returns a Github OAuth Token
+// GetAccessToken returns a Github OAuth Token
 func getAccessToken(client *authClient, config config, installationID int64) (string, error) {
 	token := os.Getenv("PERSONAL_ACCESS_TOKEN")
 	if len(token) == 0 {
@@ -199,7 +199,7 @@ func makeAccessTokenForInstallation(
 	}
 
 	defer res.Body.Close()
-	bytesOut, readErr := ioutil.ReadAll(res.Body)
+	bytesOut, readErr := io.ReadAll(res.Body)
 	if readErr != nil {
 		return "", readErr
 	}
@@ -209,7 +209,7 @@ func makeAccessTokenForInstallation(
 	return jwtAuth.Token, jsonErr
 }
 
-//getSignedToken Returns a signed JWT Token
+// getSignedToken Returns a signed JWT Token
 func getSignedToken(appID string, privateKey string) (string, error) {
 	keyBytes := []byte(privateKey)
 	pKey, err := bytesToPrivateKey(keyBytes)
@@ -240,7 +240,7 @@ func getSignedToken(appID string, privateKey string) (string, error) {
 	return string(signed), nil
 }
 
-//BytesToPrivateKey bytes to private key
+// BytesToPrivateKey bytes to private key
 func bytesToPrivateKey(priv []byte) (*rsa.PrivateKey, error) {
 	block, _ := pem.Decode(priv)
 	if block == nil {

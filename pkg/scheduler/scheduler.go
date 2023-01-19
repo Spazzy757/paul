@@ -2,10 +2,11 @@ package scheduler
 
 import (
 	"context"
+
 	paulclient "github.com/Spazzy757/paul/pkg/client"
 	paulgithub "github.com/Spazzy757/paul/pkg/github"
 	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/robfig/cron/v3"
 	log "github.com/sirupsen/logrus"
 )

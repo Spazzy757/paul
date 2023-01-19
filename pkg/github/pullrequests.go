@@ -6,14 +6,14 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 )
 
 const (
 	emptyDescriptionMessage = "There seems to be no description in your Pull Request.Please add an understanding of what this change proposes to do and why it is needed"
 )
 
-//PullRequestHandler handler for the pull request event
+// PullRequestHandler handler for the pull request event
 func PullRequestHandler(
 	ctx context.Context,
 	event *github.PullRequestEvent,
@@ -55,7 +55,7 @@ func PullRequestHandler(
 	return err
 }
 
-//firstPRCheck checks if a PR has just been opened and
+// firstPRCheck checks if a PR has just been opened and
 func firstPRCheck(
 	ctx context.Context,
 	cfg types.PaulConfig,
@@ -104,7 +104,7 @@ func emptyDescriptionCheck(
 	return nil
 }
 
-//branchDestroyerCheck checks if branch can be destroyed
+// branchDestroyerCheck checks if branch can be destroyed
 func branchDestroyerCheck(
 	ctx context.Context,
 	cfg types.PaulConfig,
@@ -129,7 +129,7 @@ func branchDestroyerCheck(
 	return nil
 }
 
-//limitPRCheck
+// limitPRCheck
 func limitPRCheck(
 	ctx context.Context,
 	cfg types.PaulConfig,
@@ -155,7 +155,7 @@ func limitPRCheck(
 	return err
 }
 
-//dcoCheck
+// dcoCheck
 func dcoCheck(
 	ctx context.Context,
 	cfg types.PaulConfig,
@@ -183,7 +183,7 @@ func dcoCheck(
 	return nil
 }
 
-//verifiedCommitCheck
+// verifiedCommitCheck
 func verifiedCommitCheck(
 	ctx context.Context,
 	cfg types.PaulConfig,
@@ -210,7 +210,7 @@ func verifiedCommitCheck(
 	return nil
 }
 
-//reviewComment sends a review comment to a Pull Request
+// reviewComment sends a review comment to a Pull Request
 func reviewComment(
 	ctx context.Context,
 	pr *github.PullRequest,
@@ -231,7 +231,7 @@ func reviewComment(
 	return err
 }
 
-//branchDestroyer will delete a branch
+// branchDestroyer will delete a branch
 func branchDestroyer(
 	ctx context.Context,
 	pr *github.PullRequest,

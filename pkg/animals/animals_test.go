@@ -19,7 +19,7 @@ func TestClientGetCat(t *testing.T) {
          }
     ]`
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(catAPIResponse))
+		_, _ = w.Write([]byte(catAPIResponse))
 	})
 	httpClient, teardown := helpers.MockHTTPClient(h)
 	defer teardown()
@@ -46,7 +46,7 @@ func TestClientGetDog(t *testing.T) {
         }
     ]`
 	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(dogAPIResponse))
+		_, _ = w.Write([]byte(dogAPIResponse))
 	})
 	httpClient, teardown := helpers.MockHTTPClient(h)
 	defer teardown()
@@ -79,7 +79,7 @@ func TestAnimalClient(t *testing.T) {
 	})
 	t.Run("Test Error UnMarshaling Json", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`test`))
+			_, _ = w.Write([]byte(`test`))
 		})
 		httpClient, teardown := helpers.MockHTTPClient(h)
 		defer teardown()

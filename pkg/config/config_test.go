@@ -3,9 +3,9 @@ package config
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Spazzy757/paul/pkg/test"
@@ -22,7 +22,7 @@ const (
 func TestGetPaulConfig(t *testing.T) {
 	t.Run("Test Read Paul Config Returns Valid Paul Config", func(t *testing.T) {
 		assertions := require.New(t)
-		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+		yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 		assertions.NoError(err)
 
 		mClient, mux, serverURL, teardown := test.GetMockClient()
@@ -58,7 +58,7 @@ func TestGetPaulConfig(t *testing.T) {
 	})
 	t.Run("Test Read Paul Config Returns Valid Paul Config if its in .github directory", func(t *testing.T) {
 		assertions := require.New(t)
-		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+		yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 		assertions.NoError(err)
 
 		mClient, mux, serverURL, teardown := test.GetMockClient()

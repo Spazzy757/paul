@@ -5,18 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/stretchr/testify/assert"
 )
 
 func getMockPayload() []byte {
-	file, _ := ioutil.ReadFile("../../mocks/opened-pr.json")
+	file, _ := os.ReadFile("../../mocks/opened-pr.json")
 	return []byte(file)
 }
 
@@ -207,7 +207,7 @@ func TestPullRequestHandler(t *testing.T) {
 			fmt.Fprint(w, `[{"number":1}]`)
 		},
 	)
-	yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+	yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 	assert.Equal(t, nil, err)
 	mux.HandleFunc(
 		"/repos/Spazzy757/paul/contents/",

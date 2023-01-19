@@ -36,7 +36,7 @@ func TestGetGif(t *testing.T) {
 	client := NewGifClient()
 	t.Run("Test Get Giphy", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(giphyResponse))
+			_, _ = w.Write([]byte(giphyResponse))
 		})
 		httpClient, teardown := helpers.MockHTTPClient(h)
 		defer teardown()
@@ -49,7 +49,7 @@ func TestGetGif(t *testing.T) {
 	})
 	t.Run("Test Error UnMarshaling Json", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`test`))
+			_, _ = w.Write([]byte(`test`))
 		})
 		httpClient, teardown := helpers.MockHTTPClient(h)
 		defer teardown()

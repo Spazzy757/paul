@@ -2,7 +2,7 @@ package gif
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"time"
@@ -15,7 +15,7 @@ const (
 	giphyUrl = "https://api.giphy.com/v1/gifs/search"
 )
 
-//Client defines the client struct
+// Client defines the client struct
 // TODO Move this into the helpers
 type Client struct {
 	HttpClient *http.Client
@@ -50,7 +50,7 @@ type giphyDataArray struct {
 	}
 }
 
-//NewCatClient issues a new Cat client
+// NewCatClient issues a new Cat client
 func NewGifClient() *Client {
 	return newClient(giphyUrl)
 }
@@ -67,7 +67,7 @@ func (cli *Client) GetLink(search string) (string, error) {
 	if err != nil {
 		return "", errors.Wrap(err, "request failed")
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "request failed")
 	}

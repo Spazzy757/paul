@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 )
 
 const (

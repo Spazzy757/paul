@@ -63,7 +63,7 @@ func main() {
 	c.Start()
 
 	// Prints out ascii art
-	fmt.Println(startUpLog)
+	fmt.Print(startUpLog)
 	log.WithFields(log.Fields{
 		"host": host,
 		"port": port,

@@ -4,10 +4,10 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 )
 
-//IncomingWebhook handles an incoming webhook request
+// IncomingWebhook handles an incoming webhook request
 func IncomingWebhook(
 	ctx context.Context,
 	r *http.Request,

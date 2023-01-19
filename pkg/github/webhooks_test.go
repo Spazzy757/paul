@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -64,7 +63,7 @@ func TestIncomingWebhook(t *testing.T) {
 	t.Run("Test Incoming Webhook checks PR", func(t *testing.T) {
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
-		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+		yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 		assert.Equal(t, nil, err)
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/pulls",
@@ -160,7 +159,7 @@ func TestIncomingWebhook(t *testing.T) {
 	t.Run("Test Incoming Webhook checks Issue Comment", func(t *testing.T) {
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
-		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+		yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/contents/",
 			func(w http.ResponseWriter, r *http.Request) {

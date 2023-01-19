@@ -10,11 +10,11 @@ import (
 	paulclient "github.com/Spazzy757/paul/pkg/client"
 	paulgithub "github.com/Spazzy757/paul/pkg/github"
 	"github.com/Spazzy757/paul/pkg/helpers"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/gorilla/mux"
 )
 
-//GetRouter .
+// GetRouter .
 func GetRouter() *mux.Router {
 	r := mux.NewRouter()
 	r.HandleFunc("/webhooks", GithubWebHookHandler)
@@ -22,7 +22,7 @@ func GetRouter() *mux.Router {
 	return r
 }
 
-//GithubWebHookHandler .
+// GithubWebHookHandler .
 func GithubWebHookHandler(w http.ResponseWriter, r *http.Request) {
 	// handle authentication
 	secretKey := helpers.GetEnv("SECRET_KEY", "")

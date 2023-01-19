@@ -2,12 +2,12 @@ package test
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	baseURLPath = "/api-v3"
 )
 
-//GetMockClient Returns a Mock Client in order to mock out calls to Githubs API
+// GetMockClient Returns a Mock Client in order to mock out calls to Githubs API
 func GetMockClient() (
 	client *github.Client,
 	mux *http.ServeMux,
@@ -50,6 +50,6 @@ func GetMockClient() (
 // GetMockPayload loads one of the json files into a []byte
 func GetMockPayload(payloadType string) []byte {
 	fileLocation := fmt.Sprintf("../../mocks/%v.json", payloadType)
-	file, _ := ioutil.ReadFile(fileLocation)
+	file, _ := os.ReadFile(fileLocation)
 	return []byte(file)
 }

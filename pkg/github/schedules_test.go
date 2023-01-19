@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"testing"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +48,7 @@ func TestPullRequestsScheduledJobs(t *testing.T) {
 	t.Run("Test Unknown Webhook Payload is Handled correctly", func(t *testing.T) {
 		mClient, mux, serverURL, teardown := test.GetMockClient()
 		defer teardown()
-		yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+		yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 		assert.Equal(t, nil, err)
 		mux.HandleFunc(
 			"/installation/repositories",

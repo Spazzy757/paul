@@ -6,7 +6,7 @@ import (
 
 	"github.com/Spazzy757/paul/pkg/config"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	log "github.com/sirupsen/logrus"
 )
 

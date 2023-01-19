@@ -5,8 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
+	"os"
 	"testing"
 
 	"github.com/Spazzy757/paul/pkg/animals"
@@ -14,14 +15,14 @@ import (
 	"github.com/Spazzy757/paul/pkg/helpers"
 	"github.com/Spazzy757/paul/pkg/test"
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func getIssueCommentMockPayload(payloadType string) []byte {
 	fileLocation := fmt.Sprintf("../../mocks/%v.json", payloadType)
-	file, _ := ioutil.ReadFile(fileLocation)
+	file, _ := os.ReadFile(fileLocation)
 	return []byte(file)
 }
 
@@ -248,7 +249,7 @@ func TestAssignCommand(t *testing.T) {
 		mux.HandleFunc(
 			"/repos/Spazzy757/paul/pulls/9/requested_reviewers",
 			func(w http.ResponseWriter, r *http.Request) {
-				body, _ := ioutil.ReadAll(r.Body)
+				body, _ := io.ReadAll(r.Body)
 				assertions.Equal(string(body), `{"reviewers":["Spazzy757"]}`+"\n")
 				fmt.Fprint(w, `{"number":9}`)
 			},
@@ -472,7 +473,7 @@ func TestMergeHandler(t *testing.T) {
 func TestIssueCommentHandler(t *testing.T) {
 	mClient, mux, serverURL, teardown := test.GetMockClient()
 	defer teardown()
-	yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+	yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 	assert.Equal(t, nil, err)
 	mux.HandleFunc(
 		"/repos/Spazzy757/paul/contents/",

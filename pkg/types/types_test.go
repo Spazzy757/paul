@@ -1,7 +1,7 @@
 package types
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -10,7 +10,7 @@ import (
 func TestLoadConfig(t *testing.T) {
 	var paulConfig PaulConfig
 
-	yamlFile, err := ioutil.ReadFile("../../.github/PAUL.yaml")
+	yamlFile, err := os.ReadFile("../../.github/PAUL.yaml")
 	assert.Equal(t, nil, err)
 
 	err = paulConfig.LoadConfig(yamlFile)

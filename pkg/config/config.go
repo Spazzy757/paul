@@ -3,16 +3,16 @@ package config
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 
 	"github.com/Spazzy757/paul/pkg/types"
-	"github.com/google/go-github/v36/github"
+	"github.com/google/go-github/v49/github"
 )
 
 const configFile = "PAUL.yaml"
 
-//GetPaulConfig returns configuration for paul
+// GetPaulConfig returns configuration for paul
 func GetPaulConfig(
 	ctx context.Context,
 	owner, repo, defaultBranch string,
@@ -53,7 +53,7 @@ func GetPaulConfig(
 	}
 	defer reader.Close()
 
-	bytesConfig, err := ioutil.ReadAll(reader)
+	bytesConfig, err := io.ReadAll(reader)
 	if err != nil {
 		return paulCfg, fmt.Errorf("unable to read github's response: %s", err)
 	}

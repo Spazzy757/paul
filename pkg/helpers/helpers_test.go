@@ -24,7 +24,7 @@ func TestGetEnv(t *testing.T) {
 func TestMockHTTPClient(t *testing.T) {
 	t.Run("Test returns mock client", func(t *testing.T) {
 		h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.Write([]byte(`test`))
+			_, _ = w.Write([]byte(`test`))
 		})
 		expected := &http.Client{}
 		mockClient, close := MockHTTPClient(h)

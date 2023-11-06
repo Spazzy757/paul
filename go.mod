@@ -3,9 +3,8 @@ module github.com/Spazzy757/paul
 go 1.18
 
 require (
-	github.com/google/go-github/v36 v36.0.0
 	github.com/google/go-github/v49 v49.1.0
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/lestrrat-go/jwx v1.2.9
 	github.com/pkg/errors v0.9.1
 	github.com/robfig/cron/v3 v3.0.1
